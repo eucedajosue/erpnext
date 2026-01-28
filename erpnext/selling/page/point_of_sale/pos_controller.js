@@ -249,6 +249,16 @@ erpnext.PointOfSale.Controller = class {
 
 	prepare_menu() {
 		this.page.clear_menu();
+		this.page.add_menu_item(__("Registrar Gasto de Caja"), async () => {
+			const pos_profile = this.pos_profile;
+			let account = "";
+			if (pos_profile) {
+				const profile = await frappe.db.get_doc("POS Profile", pos_profile);
+				account = profile.account_for_change_amount || ""; // Ajusta el campo si es diferente
+			}
+			const url = `${window.location.origin}/app/payment-entry/new?payment_type=Pay${account ? `&paid_from=${encodeURIComponent(account)}` : ""}`;
+			window.open(url, "_blank");
+		});
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");
 		this.page.add_menu_item(__("Close the POS"), this.close_pos.bind(this), false, "Shift+Ctrl+C");
 	}
@@ -258,6 +268,34 @@ erpnext.PointOfSale.Controller = class {
 		this.page.clear_icons();
 		this.page.set_primary_action(__("New Invoice"), this.new_invoice_event.bind(this));
 		this.page.set_secondary_action(__("Recent Orders"), this.toggle_recent_order.bind(this));
+		
+		this.page.add_action_icon(
+			"fullscreen",
+			this.bind_fullscreen_events.bind(this),
+			"btn-fullscreen",
+			"Fullscreen"
+		);
+		this.page.add_action_icon(
+			"minimize",
+			this.bind_fullscreen_events.bind(this),
+			"btn-minimize hide",
+			"Minimize"
+		);
+	}
+
+	bind_fullscreen_events() {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen();
+			this.toggle_fullscreen_btn(".btn-minimize", ".btn-fullscreen");
+		} else if (document.exitFullscreen) {
+			document.exitFullscreen();
+			this.toggle_fullscreen_btn(".btn-fullscreen", ".btn-minimize");
+		}
+	}
+
+	toggle_fullscreen_btn(show, hide) {
+		this.page.page_actions.find(hide).addClass("hide");
+		this.page.page_actions.find(show).removeClass("hide");
 	}
 
 	open_form_view() {
@@ -584,6 +622,10 @@ erpnext.PointOfSale.Controller = class {
 				this.frm.doc.items = [];
 				this.frm.doc.is_pos = 1;
 				if (doctype == "Sales Invoice") this.frm.doc.is_created_using_pos = 1;
+                const sales_person = this.cart?.si_sales_person_field?.get_value?.() || "";
+				if (sales_person) {
+					this.frm.doc.custom_si_sales_person = sales_person;
+				}
 				resolve();
 			} else {
 				frappe.model.with_doctype(doctype, () => {
@@ -591,6 +633,10 @@ erpnext.PointOfSale.Controller = class {
 					this.frm.doc.items = [];
 					this.frm.doc.is_pos = 1;
 					if (doctype == "Sales Invoice") this.frm.doc.is_created_using_pos = 1;
+					const sales_person = this.cart?.si_sales_person_field?.get_value?.() || "";
+					if (sales_person) {
+						this.frm.doc.custom_si_sales_person = sales_person;
+					}
 					resolve();
 				});
 			}
@@ -691,14 +737,6 @@ erpnext.PointOfSale.Controller = class {
 
 				if (!item_code) return;
 
-				if (rate == undefined || rate == 0) {
-					frappe.show_alert({
-						message: __("Price is not set for the item."),
-						indicator: "orange",
-					});
-					frappe.utils.play_sound("error");
-					return;
-				}
 				const new_item = { item_code, batch_no, rate, uom, [field]: value, stock_uom };
 
 				if (serial_no) {
@@ -902,6 +940,22 @@ erpnext.PointOfSale.Controller = class {
 	}
 
 	async save_and_checkout() {
+		// Validar vendedor según configuración
+		const config = await frappe.db.get_doc("Configurations", undefined);
+		if (config.vendedor_es_obligatorio) {
+			const items_sin_vendedor = (this.frm.doc.items || []).filter(
+				item => !item.custom_sales_person
+			);
+			if (items_sin_vendedor.length > 0) {
+				frappe.show_alert({
+					message: __("Todos los ítems deben tener un vendedor asignado."),
+					indicator: "orange",
+				});
+				frappe.utils.play_sound("error");
+				return;
+			}
+		}
+
 		if (this.frm.is_dirty()) {
 			let save_error = false;
 			await this.frm.save(null, null, null, () => (save_error = true));

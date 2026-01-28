@@ -92,6 +92,10 @@ erpnext.PointOfSale.ItemCart = class {
 			`<div class="add-discount-wrapper">
 				${this.get_discount_icon()} ${__("Add Discount")}
 			</div>
+			<div class="si-sales-person-container">
+				<div class="si-sales-person-label">${__("Sales Person")}</div>
+				<div class="si-sales-person-field"></div>
+			</div>
 			<div class="item-qty-total-container">
 				<div class="item-qty-total-label">${__("Total Items")}</div>
 				<div class="item-qty-total-value">0.00</div>
@@ -105,13 +109,96 @@ erpnext.PointOfSale.ItemCart = class {
 				<div>${__("Grand Total")}</div>
 				<div>0.00</div>
 			</div>
+			<div class="recibo-container">
+            	<div class="recibo-field"></div>
+			</div>
 			<div class="checkout-btn">${__("Checkout")}</div>
 			<div class="edit-cart-btn">${__("Edit Cart")}</div>`
 		);
 
 		this.$add_discount_elem = this.$component.find(".add-discount-wrapper");
-	}
 
+		// Protección: frm puede no estar listo aún
+		const frm_now = this.events?.get_frm?.() || (typeof cur_frm !== "undefined" ? cur_frm : null);
+
+		// Control Check para "Recibo"
+		this.recibo_field = frappe.ui.form.make_control({
+			df: {
+				fieldtype: "Check",
+				label: __("Recibo"),
+				onchange: () => {
+					const val = this.recibo_field.get_value() ? 1 : 0;
+					// Obtener frm en el momento del cambio (puede ya estar listo)
+					const frm = this.events?.get_frm?.() || (typeof cur_frm !== "undefined" ? cur_frm : null);
+					const fieldname = this.get_recibo_fieldname(frm);
+
+					if (frm?.doc) {
+						frappe.model.set_value(frm.doc.doctype, frm.doc.name, fieldname, val);
+					} else {
+						// Si aún no hay frm, guardamos en memoria y lo aplicamos luego
+						this._recibo_pending = val;
+					}
+				},
+			},
+			parent: this.$totals_section.find(".recibo-field"),
+			render_input: true,
+		});
+		this.recibo_field.toggle_label(false);
+
+		// Valor inicial seguro (si no hay frm todavía, usamos 0 y luego se actualizará)
+		const initial_val = frm_now?.doc ? (frm_now.doc[this.get_recibo_fieldname(frm_now)] || 0) : 0;
+		this.set_recibo_value(initial_val);
+
+		// controlar visibilidad según DocField.hidden
+		this.refresh_recibo_visibility(frm_now);
+
+		// Bloque para Sales Person
+
+		const frm = this.events?.get_frm?.() || cur_frm;
+		const sp_fieldname = "custom_si_sales_person";
+
+		if (sp_fieldname) {
+			this.si_sales_person_field = frappe.ui.form.make_control({
+				df: {
+					fieldtype: "Link",
+					label: __("Sales Person"),
+					options: "Sales Person",
+					get_query: () => ({ filters: { enabled: 1 } }),
+						
+					onchange: () => {
+						const frm = this.events?.get_frm?.() || (typeof cur_frm !== "undefined" ? cur_frm : null);
+						if (frm && frm.doc) {
+							const sales_person = this.si_sales_person_field.get_value();
+							frappe.model.set_value(frm.doc.doctype, frm.doc.name, sp_fieldname, sales_person);
+							
+							this.last_sales_person = sales_person || "";
+							
+							// Actualizar custom_sales_person en los items que estén en blanco
+							(frm.doc.items || []).forEach(item => {
+								if (!item.custom_sales_person) {
+									frappe.model.set_value(item.doctype || "Sales Invoice Item", item.name, "custom_sales_person", sales_person);
+								}
+							});
+
+							// Refrescar el cart para mostrar el vendedor actualizado
+							this.$cart_items_wrapper.html("");
+							(frm.doc.items || []).forEach(item => {
+								this.update_item_html(item);
+							});
+														
+						}
+					}
+				},
+				parent: this.$totals_section.find(".si-sales-person-field"),
+				render_input: true,
+			});
+			this.si_sales_person_field.toggle_label(false);
+			this.set_sales_person_value(frm?.doc?.[sp_fieldname] || "");
+			this.refresh_sales_person_visibility(frm);
+		} else {
+			this.$totals_section.find(".si-sales-person-container").hide();
+		}
+	}
 	make_cart_numpad() {
 		this.$numpad_section = this.$component.find(".numpad-section");
 
@@ -165,6 +252,21 @@ erpnext.PointOfSale.ItemCart = class {
 			const show = me.$cart_container.is(":visible");
 			me.toggle_customer_info(show);
 		});
+
+		// === Nuevo: refrescar el Check si el doc cambia ===
+			frappe.ui.form.on("POS Invoice", "recibo", (frm) => {
+				this.set_recibo_value(frm.doc.recibo);
+			});
+			frappe.ui.form.on("POS Invoice", "custom_recibo", (frm) => {
+				this.set_recibo_value(frm.doc.custom_recibo);
+			});
+			frappe.ui.form.on("Sales Invoice", "recibo", (frm) => {
+				this.set_recibo_value(frm.doc.recibo);
+			});
+			frappe.ui.form.on("Sales Invoice", "custom_recibo", (frm) => {
+				this.set_recibo_value(frm.doc.custom_recibo);
+			});
+
 
 		this.$cart_items_wrapper.on("click", ".cart-item-wrapper", function () {
 			const $cart_item = $(this);
@@ -503,7 +605,9 @@ erpnext.PointOfSale.ItemCart = class {
 	}
 
 	update_totals_section(frm) {
-		if (!frm) frm = this.events.get_frm();
+		// Protección: no asumimos que frm exista todavía
+		frm = frm || this.events?.get_frm?.() || (typeof cur_frm !== "undefined" ? cur_frm : null);
+		if (!frm?.doc) return; // sin frm no hay totales que pintar
 
 		this.render_net_total(frm.doc.net_total);
 		this.render_total_item_qty(frm.doc.items);
@@ -511,8 +615,20 @@ erpnext.PointOfSale.ItemCart = class {
 			? frm.doc.grand_total
 			: frm.doc.rounded_total;
 		this.render_grand_total(grand_total);
+		// Sincronizar el Check con el doc
+		this.set_recibo_value(frm.doc[this.get_recibo_fieldname(frm)] || 0);
 
 		this.render_taxes(frm.doc.taxes);
+
+		
+		// Si hubo un cambio pendiente antes de que el frm estuviera listo, aplícalo
+		if (typeof this._recibo_pending !== "undefined") {
+			const fieldname = this.get_recibo_fieldname(frm);
+			frappe.model.set_value(frm.doc.doctype, frm.doc.name, fieldname, cint(this._recibo_pending));
+			delete this._recibo_pending;
+		}
+
+		this.refresh_recibo_visibility(frm);
 	}
 
 	render_net_total(value) {
@@ -581,6 +697,12 @@ erpnext.PointOfSale.ItemCart = class {
 	}
 
 	update_item_html(item, remove_item) {
+		const frm = this.events.get_frm();
+		const sales_person = frm.doc.custom_si_sales_person;
+		if (!item.custom_sales_person && sales_person) {
+			frappe.model.set_value(item.doctype || "Sales Invoice Item", item.name, "custom_sales_person", sales_person);
+		}
+
 		const $item = this.get_cart_item(item);
 
 		if (remove_item) {
@@ -614,12 +736,20 @@ erpnext.PointOfSale.ItemCart = class {
 				<div class="item-name">
 					${item_data.item_name}
 				</div>
+        		${get_sales_person_html(item_data)}
 				${get_description_html()}
 			</div>
 			${get_rate_discount_html()}`
 		);
 
 		set_dynamic_rate_header_width();
+
+		function get_sales_person_html(item_data) {
+			if (item_data.custom_sales_person) {
+				return `<div class="item-sales-person">${__("Vendedor")}: <b>${frappe.utils.escape_html(item_data.custom_sales_person)}</b></div>`;
+			}
+			return "";
+		}
 
 		function set_dynamic_rate_header_width() {
 			const rate_cols = Array.from(me.$cart_items_wrapper.find(".item-rate-amount"));
@@ -1112,4 +1242,91 @@ erpnext.PointOfSale.ItemCart = class {
 	toggle_component(show) {
 		show ? this.$component.css("display", "flex") : this.$component.css("display", "none");
 	}
+
+	// === Nuevos helpers para Recibo (Check) ===
+	get_recibo_fieldname(frm) {
+		// Ajusta aquí si tu campo tiene un nombre distinto
+		if (frm?.doc && "recibo" in frm.doc) return "recibo";
+		if (frm?.doc && "custom_recibo" in frm.doc) return "custom_recibo";
+		// fallback si aún no hay frm: usa el nombre esperado principal
+		return "recibo";
+	}
+
+	set_recibo_value(value) {
+		if (this.recibo_field) {
+			this.recibo_field.set_value(cint(value || 0));
+		} else {
+			const checked = cint(value) ? "✓" : "✗";
+			this.$totals_section.find(".recibo-container .recibo-field").html(`<span>${checked}</span>`);
+		}
+	}
+
+	
+	refresh_recibo_visibility(frm) {
+		// Contenedor de la fila "Recibo"
+		const $row = this.$totals_section?.find(".recibo-container");
+		if (!$row?.length) return;
+
+		// Si no tenemos frm aún, muéstralo por ahora (se ajustará luego)
+		if (!frm?.doc) {
+			$row.show();
+			return;
+		}
+
+		const fieldname = this.get_recibo_fieldname(frm);
+
+		// Intentar obtener el DocField desde el form o desde meta
+		let df;
+		try {
+			df = (frm.get_docfield && frm.get_docfield(fieldname))
+				|| frappe.meta.get_docfield(frm.doc.doctype, fieldname, frm.doc.name);
+		} catch (e) {
+			df = null;
+		}
+
+		// Regla: si no existe el campo o está hidden -> ocultar
+		if (!df || df.hidden) {
+			$row.hide();
+		} else {
+			$row.show();
+		}
+	}
+
+	set_sales_person_value(value) {
+		if (this.si_sales_person_field) {
+			this.si_sales_person_field.set_value(value || "");
+		} else {
+			this.$totals_section.find(".si-sales-person-field").html(`<span>${frappe.utils.escape_html(value || "")}</span>`);
+		}
+	}
+
+	
+	refresh_sales_person_visibility(frm) {
+		const $row = this.$totals_section?.find(".si-sales-person-container");
+		if (!$row?.length) return;
+	
+		// Si no hay frm, muestra el campo
+		if (!frm?.doc) {
+			$row.show();
+			return;
+		}
+	
+		// Intentar obtener el DocField desde el form o desde meta
+		const fieldname = "custom_si_sales_person"; // Usa el nombre real del campo
+		let df;
+		try {
+			df = (frm.get_docfield && frm.get_docfield(fieldname))
+				|| frappe.meta.get_docfield(frm.doc.doctype, fieldname, frm.doc.name);
+		} catch (e) {
+			df = null;
+		}
+	
+		// Si el campo no existe o está oculto, oculta el bloque
+		if (!df || df.hidden) {
+			$row.hide();
+		} else {
+			$row.show();
+		}
+	}
+
 };

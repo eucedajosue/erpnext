@@ -30,13 +30,14 @@ erpnext.PointOfSale.ItemSelector = class {
 					<div class="search-field"></div>
 					<div class="item-group-field"></div>
 				</div>
+				<div class="groups-container show-item-image" style="display:none;"></div>
 				<div class="items-container"></div>
 			</section>`
 		);
 
 		this.$component = this.wrapper.find(".items-selector");
 		this.$items_container = this.$component.find(".items-container");
-
+		this.$groups_container = this.$component.find(".groups-container");
 		this.$items_container.addClass(this.item_display_class);
 	}
 
@@ -207,38 +208,37 @@ erpnext.PointOfSale.ItemSelector = class {
 			parent: this.$component.find(".search-field"),
 			render_input: true,
 		});
-		this.item_group_field = frappe.ui.form.make_control({
-			df: {
-				label: __("Item Group"),
-				fieldtype: "Link",
-				options: "Item Group",
-				placeholder: __("Select item group"),
-				only_select: true,
-				onchange: function () {
-					me.item_group = this.value;
-					!me.item_group && (me.item_group = me.parent_item_group);
-					me.filter_items();
-					me.set_item_selector_filter_label(this.value);
-				},
-				get_query: function () {
-					return {
-						query: "erpnext.selling.page.point_of_sale.point_of_sale.item_group_query",
-						filters: {
-							pos_profile: me.pos_profile,
-						},
-					};
-				},
-			},
-			parent: this.$component.find(".item-group-field"),
-			render_input: true,
-		});
+		
 		this.search_field.toggle_label(false);
-		this.item_group_field.toggle_label(false);
 
-		$(this.item_group_field.awesomplete.ul).css("min-width", "unset");
-
-		this.hide_open_link_btn();
 		this.attach_clear_btn();
+		// Botón para mostrar la cuadrícula de grupos
+		this.$component.find(".item-group-field").append(`
+			<button class="btn btn-secondary btn-show-groups" style="margin-left:10px;">${__("Grupos")}</button>
+			<button class="btn btn-light btn-show-all" style="margin-left:5px;">${__("Ver Todos")}</button>
+		`);
+		this.$component.find(".btn-show-groups").on("click", () => {
+			this.toggle_group_and_items();
+		});
+	}
+toggle_group_and_items() {
+		if (this.$groups_container.is(":visible")) {
+			// Si el grid de grupos está visible, mostrar items y ocultar grupos
+			this.$groups_container.hide();
+			this.$items_container.show();
+			this.filter_items({ search_term: "" });
+		} else {
+			// Si el grid de grupos está oculto, mostrar grupos y ocultar items
+			this.show_groups_container();
+		}
+		this.$component.find(".btn-show-all").on("click", () => {
+			// Mostrar todos los productos (grupo principal)
+			this.item_group = this.parent_item_group;
+			this.$groups_container.hide();
+			this.$items_container.show();
+			this.filter_items({ search_term: "" });
+			this.$component.find(".label").text(__("Ver Todos"));
+		});
 	}
 
 	set_item_selector_filter_label(value) {
@@ -260,23 +260,11 @@ erpnext.PointOfSale.ItemSelector = class {
 			</span>`
 		);
 
-		this.item_group_field.$wrapper.find(".link-btn").append(
-			`<a class="btn-clear" tabindex="-1" style="display: inline-block;" title="${__("Clear Link")}">
-				${frappe.utils.icon("close", "xs", "es-icon")}
-			</a>`
-		);
-
 		this.$clear_search_btn = this.search_field.$wrapper.find(".link-btn");
-		this.$clear_item_group_btn = this.item_group_field.$wrapper.find(".btn-clear");
 
 		this.$clear_search_btn.on("click", "a", () => {
 			this.set_search_value("");
 			this.search_field.set_focus();
-		});
-
-		this.$clear_item_group_btn.on("click", () => {
-			$(this.item_group_field.$input[0]).val("").trigger("input");
-			this.item_group_field.set_focus();
 		});
 	}
 
@@ -287,6 +275,15 @@ erpnext.PointOfSale.ItemSelector = class {
 	bind_events() {
 		const me = this;
 		window.onScan = onScan;
+
+		this.$component.on("click", ".group-wrapper", (e) => {
+				const group = $(e.currentTarget).data("group");
+				this.item_group = group;
+				this.$groups_container.hide();
+				this.$items_container.show();
+				this.filter_items({ search_term: "" });
+				this.$component.find(".label").text(group);
+			});
 
 		onScan.decodeKeyEvent = function (oEvent) {
 			var iCode = this._getNormalizedKeyNum(oEvent);
@@ -376,7 +373,7 @@ erpnext.PointOfSale.ItemSelector = class {
 			ignore_inputs: true,
 			page: cur_page.page.page,
 		});
-		this.item_group_field.parent.attr("title", `${ctrl_label}+G`);
+		//this.item_group_field.parent.attr("title", `${ctrl_label}+G`);
 		frappe.ui.keys.add_shortcut({
 			shortcut: "ctrl+g",
 			action: () => this.item_group_field.set_focus(),
@@ -467,4 +464,44 @@ erpnext.PointOfSale.ItemSelector = class {
 		this.set_search_value("");
 		this.$component.css("display", show ? "flex" : "none");
 	}
+
+	// Modifica show_groups_container para usar el mismo estilo
+	async show_groups_container() {
+		const res = await frappe.call({
+			method: "erpnext.selling.page.point_of_sale.point_of_sale.get_item_groups",
+			args: { parent_item_group: this.parent_item_group },
+		});
+		const groups = res.message || [];
+		this.$groups_container.html("");
+		
+		groups.forEach(group => {
+			this.$groups_container.append(`
+				<div class="group-wrapper" data-group="${group.name}">
+					${this.get_group_image_html(group)}
+					
+					<div class="group-name">${frappe.ellipsis(group.name, 18)}</div>
+					
+				</div>
+			`);
+		});
+		this.$groups_container.show();
+		this.$items_container.hide();
+	}
+
+	
+	get_group_image_html(group) {
+		if (this.hide_images) return "";
+		if (group.image) {
+			return `<div class="group-image">
+						<img
+							onerror="cur_pos.item_selector.handle_broken_image(this)"
+							class="item-img" src="${group.image}"
+							alt="${group.name}"
+						>
+					</div>`;
+		} else {
+			return `<div class="item-display abbr">${frappe.get_abbr(group.name)}</div>`;
+		}
+	}
+
 };

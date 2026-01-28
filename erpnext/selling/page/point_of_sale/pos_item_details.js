@@ -37,8 +37,8 @@ erpnext.PointOfSale.ItemDetails = class {
 			<div class="item-display">
 				<div class="item-name-desc-price">
 					<div class="item-name"></div>
-					<div class="item-desc"></div>
 					<div class="item-price"></div>
+					<div class="item-desc"></div>
 				</div>
 				<div class="item-image"></div>
 			</div>
@@ -130,8 +130,20 @@ erpnext.PointOfSale.ItemDetails = class {
 		}
 
 		this.$item_name.html(item_name);
-		this.$item_description.html(get_description_html());
 		this.$item_price.html(format_currency(price_list_rate, this.currency));
+		// Reemplazamos con un textarea editable
+		this.$item_description.html(
+			`<label class="control-label" style="padding-right: 5px;">Descripción</label>
+			<textarea class="item-desc-input input-with-feedback form-control bold" 
+			style="width:100%; resize:none;">${description || ""}</textarea>`
+		);
+		// Evento para actualizar la descripción
+		this.$item_description.find(".item-desc-input").on("input", (e) => {
+			const new_desc = e.target.value;
+			item.description = new_desc;  // Actualiza en tu objeto local
+			this.events.form_updated(item, "description", new_desc); // Llama a tu evento para actualizar el cart
+		});
+
 		if (!this.hide_images && image) {
 			this.$item_image.html(
 				`<img
@@ -186,6 +198,24 @@ erpnext.PointOfSale.ItemDetails = class {
 				render_input: true,
 			});
 			this[`${fieldname}_control`].set_value(item[fieldname]);
+
+			// Respeta hidden / read_only desde la meta
+			if (field_meta?.read_only) this[`${fieldname}_control`].df.read_only = 1;
+			this[`${fieldname}_control`].refresh();
+
+			if (field_meta?.hidden) {
+				this.$form_container.find(`.${fieldname}-control`).hide();
+			} else if (
+				["custom_sales_person"].includes(fieldname)
+			) {
+				// Inicializa con el Sales Person del encabezado si está vacío
+				const doc = this.events.get_frm().doc || {};
+				const doc_sp = doc.custom_sales_person || "";
+				if (!this.current_item[fieldname] && doc_sp) {
+					this[`${fieldname}_control`].set_value(doc_sp);
+					this.events.form_updated(this.current_item, fieldname, doc_sp);
+				}
+			}
 		});
 
 		this.resize_serial_control(item);
@@ -205,6 +235,16 @@ erpnext.PointOfSale.ItemDetails = class {
 			"actual_qty",
 			"price_list_rate",
 		];
+		
+		const has_df = (fname) => {
+			return this.item_meta?.fields?.some((df) => df.fieldname === fname);
+		};
+
+		// Empuja el campo si existe en la meta del child doctype
+		if (has_df("custom_sales_person")) {
+			fields.push("custom_sales_person");
+		}
+
 		if (item.has_serial_no || item.serial_no) fields.push("serial_no");
 		if (item.has_batch_no || item.batch_no) fields.push("batch_no");
 		return fields;
@@ -258,6 +298,7 @@ erpnext.PointOfSale.ItemDetails = class {
 				if (this.value) {
 					me.events.form_updated(me.current_item, "warehouse", this.value).then(() => {
 						me.item_stock_map = me.events.get_item_stock_map();
+						
 						const available_qty = me.item_stock_map[me.item_row.item_code][this.value][0];
 						const is_stock_item = Boolean(
 							me.item_stock_map[me.item_row.item_code][this.value][1]

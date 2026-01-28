@@ -544,3 +544,28 @@ def get_customer_recent_transactions(customer):
 
 	invoices = order_results_by_posting_date(sales_invoices + pos_invoices)
 	return invoices
+
+@frappe.whitelist()
+def get_item_groups(parent_item_group=None):
+    # Obtener el grupo principal si no se especifica
+    if not parent_item_group:
+        parent_item_group = frappe.get_all("Item Group", {"lft": 1, "is_group": 1}, pluck="name")
+        if parent_item_group:
+            parent_item_group = parent_item_group[0]
+        else:
+            return []
+
+    # Obtener el grupo principal
+    main_group = frappe.get_value("Item Group", parent_item_group, ["name", "image"])
+    groups = []
+    if main_group:
+        groups.append({"name": main_group[0], "image": main_group[1]})
+
+    # Obtener los grupos hijos
+    child_groups = frappe.get_all(
+        "Item Group",
+        filters={"parent_item_group": parent_item_group},
+        fields=["name", "image"]
+    )
+    groups.extend(child_groups)
+    return groups

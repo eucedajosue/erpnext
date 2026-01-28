@@ -6,7 +6,7 @@ frappe.ui.form.on("POS Closing Entry", {
 		frm.ignore_doctypes_on_cancel_all = ["POS Invoice Merge Log", "Sales Invoice"];
 		frm.set_query("pos_profile", function (doc) {
 			return {
-				filters: { user: doc.user },
+				filters: { "applicable_for_users.user": doc.user },
 			};
 		});
 
