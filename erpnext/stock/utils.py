@@ -594,6 +594,18 @@ def scan_barcode(search_value: str, ctx: dict | str | None = None) -> BarcodeSca
 		set_cache(barcode_data)
 		return barcode_data
 
+	# --- NUEVA SECCIÓN: Buscar por Código de Producto (Item Code) ---
+	item_data = frappe.db.get_value(
+		"Item",
+		search_value, # Busca directamente por la llave primaria (name)
+		["name as item_code", "stock_uom as uom"],
+		as_dict=True,
+	)
+	if item_data:
+		set_cache(item_data)
+		return item_data
+	# ----------------------------------------------------------------
+ 
 	# search serial no
 	serial_no_data = frappe.db.get_value(
 		"Serial No",
