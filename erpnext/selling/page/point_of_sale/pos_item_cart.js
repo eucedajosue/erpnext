@@ -350,6 +350,51 @@ erpnext.PointOfSale.ItemCart = class {
 			// called when discount is applied
 			this.update_totals_section(frm);
 		});
+
+		this.$cart_items_wrapper.on("click", ".qty-increase-btn", function (e) {
+			e.stopPropagation();
+			const $cart_item = $(this).closest(".cart-item-wrapper");
+			const item_row_name = unescape($cart_item.attr("data-row-name"));
+			const frm = me.events.get_frm();
+			if (frm && frm.doc && Array.isArray(frm.doc.items)) {
+				const item = frm.doc.items.find(i => i.name == item_row_name);
+				if (item) {
+					frappe.model.set_value(item.doctype || "Sales Invoice Item", item.name, "qty", flt(item.qty) + 1).then(() => {
+						// El callback de set_value asegura que los triggers y totales se actualicen correctamente
+						me.update_item_html(item);
+						if (typeof frm.calculate_taxes_and_totals === "function") {
+							frm.calculate_taxes_and_totals();
+						}
+						me.update_totals_section(frm);
+						if (frm.fields_dict && frm.fields_dict.items && frm.fields_dict.items.grid) {
+							frm.fields_dict.items.grid.refresh();
+						}
+					});
+				}
+			}
+		});
+
+		this.$cart_items_wrapper.on("click", ".qty-decrease-btn", function (e) {
+			e.stopPropagation();
+			const $cart_item = $(this).closest(".cart-item-wrapper");
+			const item_row_name = unescape($cart_item.attr("data-row-name"));
+			const frm = me.events.get_frm();
+			if (frm && frm.doc && Array.isArray(frm.doc.items)) {
+				const item = frm.doc.items.find(i => i.name == item_row_name);
+				if (item && flt(item.qty) > 1) {
+					frappe.model.set_value(item.doctype || "Sales Invoice Item", item.name, "qty", flt(item.qty) - 1).then(() => {
+						me.update_item_html(item);
+						if (typeof frm.calculate_taxes_and_totals === "function") {
+							frm.calculate_taxes_and_totals();
+						}
+						me.update_totals_section(frm);
+						if (frm.fields_dict && frm.fields_dict.items && frm.fields_dict.items.grid) {
+							frm.fields_dict.items.grid.refresh();
+						}
+					});
+				}
+			}
+		});
 	}
 
 	attach_shortcuts() {
@@ -774,7 +819,10 @@ erpnext.PointOfSale.ItemCart = class {
         		${get_sales_person_html(item_data)}
 				${get_description_html()}
 			</div>
-			
+			<div class="item-qty-actions" style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
+			<button class="qty-decrease-btn" title="Disminuir" style="background:#eee;border:none;border-radius:3px;width:24px;height:24px;font-weight:bold;font-size:16px;cursor:pointer;">-</button>
+			<button class="qty-increase-btn" title="Aumentar" style="background:#eee;border:none;border-radius:3px;width:24px;height:24px;font-weight:bold;font-size:16px;cursor:pointer;">+</button>
+			</div>
 			${get_rate_discount_html()}`
 		);
 
