@@ -50,7 +50,6 @@ erpnext.PointOfSale.ItemCart = class {
 						<div class="name-header">${__("Item")}</div>
 						<div class="qty-header">${__("Quantity")}</div>
 						<div class="rate-amount-header">${__("Amount")}</div>
-						<div class="options-header">${__("Options")}</div>
 					</div>
 					<div class="cart-items-section"></div>
 					<div class="cart-totals-section"></div>
@@ -760,7 +759,14 @@ erpnext.PointOfSale.ItemCart = class {
 		}
 
 		$item_to_update.html(
-			`${get_item_image_html()}
+			`
+			<div class="item-options">
+				<span class="remove-cart-item-btn" title="Eliminar" style="cursor:pointer;display:inline-block;">
+					<svg width="32" height="32" viewBox="0 0 14 14" fill="none">
+						<path d="M4.93764 4.93759L7.00003 6.99998M9.06243 9.06238L7.00003 6.99998M7.00003 6.99998L4.93764 9.06238L9.06243 4.93759" stroke="#d9534f"></path>
+					</svg>
+				</span>
+			</div>${get_item_image_html()}
 			<div class="item-name-desc">
 				<div class="item-name">
 					${item_data.item_name}
@@ -768,14 +774,8 @@ erpnext.PointOfSale.ItemCart = class {
         		${get_sales_person_html(item_data)}
 				${get_description_html()}
 			</div>
-			${get_rate_discount_html()}
-			<div class="item-options">
-				<span class="remove-cart-item-btn" title="Eliminar" style="cursor:pointer;display:inline-block;">
-					<svg width="32" height="32" viewBox="0 0 14 14" fill="none">
-						<path d="M4.93764 4.93759L7.00003 6.99998M9.06243 9.06238L7.00003 6.99998M7.00003 6.99998L4.93764 9.06238L9.06243 4.93759" stroke="#d9534f"></path>
-					</svg>
-				</span>
-			</div>`
+			
+			${get_rate_discount_html()}`
 		);
 
 		set_dynamic_rate_header_width();
