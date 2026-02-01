@@ -98,6 +98,7 @@ class PaymentEntry(AccountsController):
 		ignore_tax_withholding_threshold: DF.Check
 		in_words: DF.SmallText | None
 		is_opening: DF.Literal["No", "Yes"]
+		is_pos_cash_movement: DF.Check
 		letter_head: DF.Link | None
 		mode_of_payment: DF.Link | None
 		naming_series: DF.Literal["ACC-PAY-.YYYY.-"]
@@ -117,6 +118,7 @@ class PaymentEntry(AccountsController):
 		payment_order: DF.Link | None
 		payment_order_status: DF.Literal["Initiated", "Payment Ordered"]
 		payment_type: DF.Literal["Receive", "Pay", "Internal Transfer"]
+		pos_closing_entry: DF.Link | None
 		pos_profile: DF.Link | None
 		posting_date: DF.Date
 		print_heading: DF.Link | None
