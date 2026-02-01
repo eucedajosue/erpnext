@@ -791,7 +791,7 @@
    "options": "POS Profile"
   },
   {
-   "default": "0",
+   "default": "1",
    "fieldname": "is_pos_cash_movement",
    "fieldtype": "Check",
    "label": "Is POS"
@@ -815,7 +815,7 @@
    "table_fieldname": "payment_entries"
   }
  ],
- "modified": "2026-01-31 22:20:42.814143",
+ "modified": "2026-01-31 22:35:52.471905",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payment Entry",
