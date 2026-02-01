@@ -15,6 +15,7 @@
   "posting_date",
   "company",
   "mode_of_payment",
+  "pos_profile",
   "party_section",
   "party_type",
   "party",
@@ -779,6 +780,12 @@
    "fieldname": "override_tax_withholding_entries",
    "fieldtype": "Check",
    "label": "Edit Tax Withholding Entries"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile"
   }
  ],
  "grid_page_length": 50,
@@ -793,7 +800,7 @@
    "table_fieldname": "payment_entries"
   }
  ],
- "modified": "2025-12-18 13:56:40.206038",
+ "modified": "2026-01-31 21:56:10.854210",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payment Entry",
