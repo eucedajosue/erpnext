@@ -118,6 +118,7 @@ frappe.ui.form.on("POS Closing Entry", {
 			if (frm.doc.pos_opening_entry) {
 				frappe.db.get_doc("POS Opening Entry", frm.doc.pos_opening_entry).then(doc => {
 					frm.set_value("pos_profile", doc.pos_profile);
+					frm.set_value("user", doc.user);
 					// Reintentar después de asignar
 					frm.trigger("get_invoices");
 				});
