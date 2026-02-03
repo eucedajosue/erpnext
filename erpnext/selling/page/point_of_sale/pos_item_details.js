@@ -245,6 +245,10 @@ erpnext.PointOfSale.ItemDetails = class {
 			fields.push("custom_sales_person");
 		}
 
+		if (has_df("item_tax_template")) {
+			fields.push("item_tax_template");
+		}
+
 		if (item.has_serial_no || item.serial_no) fields.push("serial_no");
 		if (item.has_batch_no || item.batch_no) fields.push("batch_no");
 		return fields;
