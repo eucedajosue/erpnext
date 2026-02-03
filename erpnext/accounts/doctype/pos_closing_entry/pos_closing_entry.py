@@ -1,3 +1,5 @@
+
+
 # Copyright (c) 2018, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
@@ -54,7 +56,6 @@ class POSClosingEntry(StatusUpdater):
 
 	def validate(self):
 		self.set_posting_date_and_time()
-		self.set_pos_cash_movements()
 		self.fetch_invoice_type()
 		self.validate_pos_opening_entry()
 		self.validate_invoice_mode()
@@ -65,19 +66,6 @@ class POSClosingEntry(StatusUpdater):
 		if self.posting_time:
 			self.posting_time = frappe.utils.nowtime()
    
-	def set_pos_cash_movements(self):
-		self.set("pos_cash_movements", [])
-
-		movements = get_pos_cash_movements(self)
-  
-		for mov in movements:
-			self.append("pos_cash_movements", {
-				"payment_entry": mov.name,
-				"posting_date": mov.posting_date,
-				"mode_of_payment": mov.mode_of_payment,
-				"amount": mov.paid_amount
-			})
-
 	def fetch_invoice_type(self):
 		self.invoice_type = frappe.db.get_single_value("POS Settings", "invoice_type")
 
@@ -224,16 +212,7 @@ class POSClosingEntry(StatusUpdater):
 		)
 
 		self.update_sales_invoices_closing_entry()
-		self.update_payment_entries()
-
-	def update_payment_entries(self):
-		for row in self.pos_cash_movements:
-			frappe.db.set_value(
-				"Payment Entry",
-				row.payment_entry,
-				"pos_closing_entry",
-				self.name
-			)
+		
         
 	def before_cancel(self):
 		self.check_pce_is_cancellable()
@@ -462,21 +441,24 @@ def build_invoice_query(invoice_doctype, user, pos_profile, start, end):
 	return query
 
 # Utility function to get POS cash movements
-def get_pos_cash_movements(self):
-    return frappe.get_all(
-        "Payment Entry",
-        filters={
-            "docstatus": 1,
-            "is_pos_cash_movement": 1,
-            "pos_profile": self.pos_profile,
-            "posting_date": ["between", [self.period_start_date, self.period_end_date]],
-            "pos_closing_entry": ["is", "not set"]
-        },
-        fields=[
-            "name",
-            "posting_date",
-            "mode_of_payment",
-            "paid_amount"
-        ]
-    )
-    
+@frappe.whitelist()
+def get_pos_cash_movements(pos_profile, period_start, period_end):
+	
+	payments = frappe.get_all(
+		"Payment Entry",
+		filters={
+			"docstatus": 1,
+			"is_pos_cash_movement": 1,
+			"payment_type": "Pay",
+			"pos_profile": pos_profile,
+			"posting_date": ["between", [period_start, period_end]],
+			"pos_closing_entry": ["is", "not set"]
+		},
+		fields=[
+			"name",
+			"posting_date",
+			"mode_of_payment",
+			"paid_amount"
+		]
+	)
+	return payments

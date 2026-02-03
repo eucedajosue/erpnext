@@ -127,7 +127,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Payment Type",
-   "options": "Receive\nPay\nInternal Transfer",
+   "options": "Pay\nReceive\nInternal Transfer",
    "print_hide": 1,
    "reqd": 1
   },
@@ -137,11 +137,12 @@
   },
   {
    "bold": 1,
-   "default": "Today",
+   "default": "Now",
    "fieldname": "posting_date",
-   "fieldtype": "Date",
+   "fieldtype": "Datetime",
    "in_list_view": 1,
    "label": "Posting Date",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -174,6 +175,7 @@
    "label": "Payment From / To"
   },
   {
+   "default": "Supplier",
    "depends_on": "eval:in_list([\"Receive\", \"Pay\"], doc.payment_type) && doc.docstatus==0",
    "fieldname": "party_type",
    "fieldtype": "Link",
@@ -788,7 +790,8 @@
    "fieldname": "pos_profile",
    "fieldtype": "Link",
    "label": "POS Profile",
-   "options": "POS Profile"
+   "options": "POS Profile",
+   "read_only": 1
   },
   {
    "default": "1",
@@ -800,7 +803,9 @@
    "fieldname": "pos_closing_entry",
    "fieldtype": "Link",
    "label": "POS Closing Entry",
-   "options": "POS Closing Entry"
+   "options": "POS Closing Entry",
+   "read_only": 1,
+   "show_on_timeline": 1
   }
  ],
  "grid_page_length": 50,
@@ -815,7 +820,7 @@
    "table_fieldname": "payment_entries"
   }
  ],
- "modified": "2026-01-31 22:35:52.471905",
+ "modified": "2026-02-03 08:53:11.777937",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payment Entry",

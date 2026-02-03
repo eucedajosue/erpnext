@@ -249,14 +249,14 @@ erpnext.PointOfSale.Controller = class {
 
 	prepare_menu() {
 		this.page.clear_menu();
-		this.page.add_menu_item(__("Registrar Gasto de Caja"), async () => {
+		this.page.add_menu_item(__("Payment Entry"), async () => {
 			const pos_profile = this.pos_profile;
 			let account = "";
 			if (pos_profile) {
 				const profile = await frappe.db.get_doc("POS Profile", pos_profile);
 				account = profile.account_for_change_amount || ""; // Ajusta el campo si es diferente
 			}
-			const url = `${window.location.origin}/app/payment-entry/new?payment_type=Pay${account ? `&paid_from=${encodeURIComponent(account)}` : ""}`;
+			const url = `${window.location.origin}/app/payment-entry/new?payment_type=Pay${account ? `&mode_of_payment=${encodeURIComponent(account)}` : ""}${pos_profile ? `&pos_profile=${encodeURIComponent(pos_profile)}` : ""}`;
 			window.open(url, "_blank");
 		});
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");

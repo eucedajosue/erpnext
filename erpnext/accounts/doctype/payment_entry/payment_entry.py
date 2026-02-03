@@ -117,10 +117,10 @@ class PaymentEntry(AccountsController):
 		party_type: DF.Link | None
 		payment_order: DF.Link | None
 		payment_order_status: DF.Literal["Initiated", "Payment Ordered"]
-		payment_type: DF.Literal["Receive", "Pay", "Internal Transfer"]
+		payment_type: DF.Literal["Pay", "Receive", "Internal Transfer"]
 		pos_closing_entry: DF.Link | None
 		pos_profile: DF.Link | None
-		posting_date: DF.Date
+		posting_date: DF.Datetime
 		print_heading: DF.Link | None
 		project: DF.Link | None
 		purchase_taxes_and_charges_template: DF.Link | None

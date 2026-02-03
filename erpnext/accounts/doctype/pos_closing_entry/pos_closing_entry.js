@@ -89,6 +89,7 @@ frappe.ui.form.on("POS Closing Entry", {
 				() => frappe.dom.freeze(__("Loading Invoices! Please Wait...")),
 				() => frm.trigger("set_opening_amounts"),
 				() => frm.trigger("get_invoices"),
+				() => frm.trigger("get_payment_entries"),
 				() => frappe.dom.unfreeze(),
 			]);
 		}
@@ -109,7 +110,7 @@ frappe.ui.form.on("POS Closing Entry", {
 	},
 
 	get_invoices(frm) {
-		console.log("Getting Invoices");
+		
 		// Recarga automática si los campos están undefined
 		if (!frm.doc.pos_profile) {
 			console.log("No profile set, reloading...");
@@ -134,8 +135,7 @@ frappe.ui.form.on("POS Closing Entry", {
 			frm.trigger("get_invoices");
 			return;
 		}
-		console.log("profile:", frm.doc.pos_profile);
-		console.log("user:", frm.doc.user);
+
 		return frappe.call({
 			method: "erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry.get_invoices",
 			args: {
@@ -150,6 +150,49 @@ frappe.ui.form.on("POS Closing Entry", {
 				refresh_payments(r.message.payments, frm);
 				add_taxes(r.message.taxes, frm);
 				refresh_fields(frm);
+			},
+		});
+	},
+	get_payment_entries(frm) {
+		return frappe.call({
+			method: "erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry.get_pos_cash_movements",
+			args: {
+				pos_profile: frm.doc.pos_profile,
+				period_start: frm.doc.period_start_date,
+				period_end: frm.doc.period_end_date,
+			},
+			callback: (r) => {
+				// Limpiar la tabla antes de agregar
+				frm.set_value("pos_payment_entries", []);
+				if (r.message && Array.isArray(r.message)) {
+					r.message.forEach(entry => {
+						frm.add_child("pos_payment_entries", {
+							payment_entry: entry.name,
+							posting_date: entry.posting_date,
+							mode_of_payment: entry.mode_of_payment,
+							amount: entry.paid_amount
+						});
+						// Restar el pago de caja de la forma de pago correspondiente
+						const payment_row = frm.doc.payment_reconciliation.find(
+							(pay) => pay.mode_of_payment === entry.mode_of_payment
+						);
+						if (payment_row) {
+							payment_row.expected_amount -= flt(entry.paid_amount);
+							payment_row.closing_amount = payment_row.expected_amount;
+							payment_row.difference = payment_row.closing_amount - payment_row.expected_amount;
+						} else {
+							frm.add_child("payment_reconciliation", {
+								mode_of_payment: entry.mode_of_payment,
+								opening_amount: 0,
+								expected_amount: -flt(entry.paid_amount),
+								closing_amount: 0,
+								difference: 0
+							});
+						}
+					});
+				}
+				frm.refresh_field("pos_payment_entries");
+				frm.refresh_field("payment_reconciliation");
 			},
 		});
 	},
@@ -235,3 +278,4 @@ function refresh_fields(frm) {
 	frm.refresh_field("total_taxes_and_charges");
 	frm.refresh_field("total_quantity");
 }
+
