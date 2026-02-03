@@ -23,18 +23,12 @@ class POSClosingEntry(StatusUpdater):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.types import DF
-
-		from erpnext.accounts.doctype.pos_closing_entry_detail.pos_closing_entry_detail import (
-			POSClosingEntryDetail,
-		)
-		from erpnext.accounts.doctype.pos_closing_entry_taxes.pos_closing_entry_taxes import (
-			POSClosingEntryTaxes,
-		)
+		from cm_app.cm_app.doctype.pos_payment_entry.pos_payment_entry import POSPaymentEntry
+		from erpnext.accounts.doctype.pos_closing_entry_detail.pos_closing_entry_detail import POSClosingEntryDetail
+		from erpnext.accounts.doctype.pos_closing_entry_taxes.pos_closing_entry_taxes import POSClosingEntryTaxes
 		from erpnext.accounts.doctype.pos_invoice_reference.pos_invoice_reference import POSInvoiceReference
-		from erpnext.accounts.doctype.sales_invoice_reference.sales_invoice_reference import (
-			SalesInvoiceReference,
-		)
+		from erpnext.accounts.doctype.sales_invoice_reference.sales_invoice_reference import SalesInvoiceReference
+		from frappe.types import DF
 
 		amended_from: DF.Link | None
 		company: DF.Link
@@ -46,6 +40,7 @@ class POSClosingEntry(StatusUpdater):
 		period_start_date: DF.Datetime
 		pos_invoices: DF.Table[POSInvoiceReference]
 		pos_opening_entry: DF.Link
+		pos_payment_entries: DF.Table[POSPaymentEntry]
 		pos_profile: DF.Link
 		posting_date: DF.Date
 		posting_time: DF.Time
@@ -59,6 +54,7 @@ class POSClosingEntry(StatusUpdater):
 
 	def validate(self):
 		self.set_posting_date_and_time()
+		self.set_pos_cash_movements()
 		self.fetch_invoice_type()
 		self.validate_pos_opening_entry()
 		self.validate_invoice_mode()
@@ -68,6 +64,19 @@ class POSClosingEntry(StatusUpdater):
 			self.posting_date = frappe.utils.nowdate()
 		if self.posting_time:
 			self.posting_time = frappe.utils.nowtime()
+   
+	def set_pos_cash_movements(self):
+		self.set("pos_cash_movements", [])
+
+		movements = get_pos_cash_movements(self)
+  
+		for mov in movements:
+			self.append("pos_cash_movements", {
+				"payment_entry": mov.name,
+				"posting_date": mov.posting_date,
+				"mode_of_payment": mov.mode_of_payment,
+				"amount": mov.paid_amount
+			})
 
 	def fetch_invoice_type(self):
 		self.invoice_type = frappe.db.get_single_value("POS Settings", "invoice_type")
@@ -215,7 +224,17 @@ class POSClosingEntry(StatusUpdater):
 		)
 
 		self.update_sales_invoices_closing_entry()
+		self.update_payment_entries()
 
+	def update_payment_entries(self):
+		for row in self.pos_cash_movements:
+			frappe.db.set_value(
+				"Payment Entry",
+				row.payment_entry,
+				"pos_closing_entry",
+				self.name
+			)
+        
 	def before_cancel(self):
 		self.check_pce_is_cancellable()
 
@@ -441,3 +460,23 @@ def build_invoice_query(invoice_doctype, user, pos_profile, start, end):
 		)
 
 	return query
+
+# Utility function to get POS cash movements
+def get_pos_cash_movements(self):
+    return frappe.get_all(
+        "Payment Entry",
+        filters={
+            "docstatus": 1,
+            "is_pos_cash_movement": 1,
+            "pos_profile": self.pos_profile,
+            "posting_date": ["between", [self.period_start_date, self.period_end_date]],
+            "pos_closing_entry": ["is", "not set"]
+        },
+        fields=[
+            "name",
+            "posting_date",
+            "mode_of_payment",
+            "paid_amount"
+        ]
+    )
+    

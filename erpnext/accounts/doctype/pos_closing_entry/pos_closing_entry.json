@@ -22,6 +22,7 @@
   "section_break_12",
   "pos_invoices",
   "sales_invoices",
+  "pos_payment_entries",
   "taxes_and_charges_section",
   "taxes",
   "section_break_13",
@@ -251,6 +252,12 @@
    "fieldtype": "Currency",
    "label": "Total Taxes and Charges",
    "read_only": 1
+  },
+  {
+   "fieldname": "pos_payment_entries",
+   "fieldtype": "Table",
+   "label": "POS Payment Entries",
+   "options": "POS Payment Entry"
   }
  ],
  "grid_page_length": 50,
@@ -261,11 +268,11 @@
    "link_fieldname": "pos_closing_entry"
   }
  ],
- "modified": "2025-06-14 02:38:14.962291",
+ "modified": "2026-02-02 12:10:12.719627",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "POS Closing Entry",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {

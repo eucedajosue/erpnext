@@ -6,7 +6,15 @@ frappe.ui.form.on("POS Closing Entry", {
 		frm.ignore_doctypes_on_cancel_all = ["POS Invoice Merge Log", "Sales Invoice"];
 		frm.set_query("pos_profile", function (doc) {
 			return {
-				filters: { "applicable_for_users.user": doc.user },
+				filters: {
+					name: [
+						"in",
+						frappe.db.get_list("POS Profile User", {
+							filters: { user: doc.user },
+							pluck: "parent",
+						}),
+					],
+				},
 			};
 		});
 
@@ -101,6 +109,33 @@ frappe.ui.form.on("POS Closing Entry", {
 	},
 
 	get_invoices(frm) {
+		console.log("Getting Invoices");
+		// Recarga automática si los campos están undefined
+		if (!frm.doc.pos_profile) {
+			console.log("No profile set, reloading...");
+			// Intentar obtener el POS Profile desde el POS Opening Entry
+			if (frm.doc.pos_opening_entry) {
+				frappe.db.get_doc("POS Opening Entry", frm.doc.pos_opening_entry).then(doc => {
+					frm.set_value("pos_profile", doc.pos_profile);
+					// Reintentar después de asignar
+					frm.trigger("get_invoices");
+				});
+				return;
+			} else {
+				frappe.show_alert({
+					message: __("No se pudo obtener el POS Profile. Verifique la apertura del POS."),
+					indicator: "red"
+				});
+				return;
+			}
+		}
+		if (!frm.doc.user) {
+			frm.set_value("user", frappe.session.user);
+			frm.trigger("get_invoices");
+			return;
+		}
+		console.log("profile:", frm.doc.pos_profile);
+		console.log("user:", frm.doc.user);
 		return frappe.call({
 			method: "erpnext.accounts.doctype.pos_closing_entry.pos_closing_entry.get_invoices",
 			args: {
