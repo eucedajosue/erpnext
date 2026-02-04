@@ -4,19 +4,11 @@
 frappe.ui.form.on("POS Closing Entry", {
 	onload: async function (frm) {
 		frm.ignore_doctypes_on_cancel_all = ["POS Invoice Merge Log", "Sales Invoice"];
-		frm.set_query("pos_profile", function (doc) {
-			return {
-				filters: {
-					name: [
-						"in",
-						frappe.db.get_list("POS Profile User", {
-							filters: { user: doc.user },
-							pluck: "parent",
-						}),
-					],
-				},
-			};
-		});
+		frm.set_query("pos_profile", () => ({
+            filters: {
+                "applicable_for_users.user": frm.doc.user || frappe.session.user
+            }
+        }));
 
 		frm.set_query("user", function (doc) {
 			return {

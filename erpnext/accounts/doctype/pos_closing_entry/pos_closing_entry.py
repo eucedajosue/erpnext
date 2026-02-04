@@ -274,7 +274,6 @@ def get_invoices(start, end, pos_profile, user):
 
 	return data
 
-
 def get_payments(invoices):
 	if not len(invoices):
 		return []
@@ -462,3 +461,4 @@ def get_pos_cash_movements(pos_profile, period_start, period_end):
 		]
 	)
 	return payments
+
