@@ -790,8 +790,7 @@
    "fieldname": "pos_profile",
    "fieldtype": "Link",
    "label": "POS Profile",
-   "options": "POS Profile",
-   "read_only": 1
+   "options": "POS Profile"
   },
   {
    "default": "1",
@@ -820,7 +819,7 @@
    "table_fieldname": "payment_entries"
   }
  ],
- "modified": "2026-02-03 08:53:11.777937",
+ "modified": "2026-02-04 13:13:24.726956",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payment Entry",

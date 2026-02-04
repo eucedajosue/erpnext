@@ -249,16 +249,19 @@ erpnext.PointOfSale.Controller = class {
 
 	prepare_menu() {
 		this.page.clear_menu();
-		this.page.add_menu_item(__("Payment Entry"), async () => {
+
+		const open_payment_entry = (payment_type) => {
 			const pos_profile = this.pos_profile;
-			let account = "";
-			if (pos_profile) {
-				const profile = await frappe.db.get_doc("POS Profile", pos_profile);
-				account = profile.account_for_change_amount || ""; // Ajusta el campo si es diferente
-			}
-			const url = `${window.location.origin}/app/payment-entry/new?payment_type=Pay${account ? `&mode_of_payment=${encodeURIComponent(account)}` : ""}${pos_profile ? `&pos_profile=${encodeURIComponent(pos_profile)}` : ""}`;
+			// Use this.settings which already contains the POS Profile data loaded in prepare_app_defaults
+			const account = this.settings.account_for_change_amount || "";
+			
+			const url = `${window.location.origin}/app/payment-entry/new?payment_type=${payment_type}${account ? `&mode_of_payment=${encodeURIComponent(account)}` : ""}${pos_profile ? `&pos_profile=${encodeURIComponent(pos_profile)}` : ""}`;
 			window.open(url, "_blank");
-		});
+		};
+
+		this.page.add_menu_item(__("Cash Withdrawal"), () => open_payment_entry("Pay"));
+		this.page.add_menu_item(__("Payment on account"), () => open_payment_entry("Receive"));
+
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");
 		this.page.add_menu_item(__("Close the POS"), this.close_pos.bind(this), false, "Shift+Ctrl+C");
 	}
