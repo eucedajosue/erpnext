@@ -702,7 +702,7 @@ class SalesInvoice(SellingController):
 		)
 
 	def check_credit_limit(self):
-		from erpnext.selling.doctype.customer.customer import check_credit_limit
+		from erpnext.selling.doctype.customer.customer import check_credit_limit, get_credit_limit
 
 		validate_against_credit_limit = False
 		bypass_credit_limit_check_at_sales_order = frappe.db.get_value(
@@ -719,6 +719,12 @@ class SalesInvoice(SellingController):
 				validate_against_credit_limit = True
 				break
 		if validate_against_credit_limit:
+			if not get_credit_limit(self.customer, self.company):
+				frappe.throw(_("Credit limit not set for customer {0}").format(self.customer))
+
+			if not self.payment_schedule:
+				frappe.throw(_("Payment Terms not set for customer {0}").format(self.customer))
+
 			check_credit_limit(self.customer, self.company, bypass_credit_limit_check_at_sales_order)
 
 	def unlink_sales_invoice_from_timesheets(self):
