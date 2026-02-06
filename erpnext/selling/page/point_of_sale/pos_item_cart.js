@@ -534,9 +534,19 @@ erpnext.PointOfSale.ItemCart = class {
 						"mobile_no",
 						"image",
 						"loyalty_program",
+						"payment_terms",
 					])
 					.then(({ message }) => {
-						const { loyalty_program } = message;
+						const { loyalty_program, payment_terms } = message;
+						const frm = this.events.get_frm();
+
+						if (payment_terms) {
+							frappe.model.set_value(frm.doc.doctype, frm.doc.name, "payment_terms_template", payment_terms)
+								.then(() => {
+									frm.script_manager.trigger("payment_terms_template", frm.doc.doctype, frm.doc.name);
+								});
+						}
+
 						// if loyalty program then fetch loyalty points too
 						if (loyalty_program) {
 							frappe.call({

@@ -1319,7 +1319,7 @@
    "label": "Payment Terms"
   },
   {
-   "depends_on": "eval:(!doc.is_pos && !doc.is_return)",
+   "depends_on": "eval:(!doc.is_return)",
    "fieldname": "payment_terms_template",
    "fieldtype": "Link",
    "hide_days": 1,
@@ -1330,7 +1330,7 @@
    "print_hide": 1
   },
   {
-   "depends_on": "eval:(!doc.is_pos && !doc.is_return)",
+   "depends_on": "eval:(!doc.is_return)",
    "fieldname": "payment_schedule",
    "fieldtype": "Table",
    "hide_days": 1,
@@ -2306,7 +2306,7 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2026-01-30 16:45:59.682473",
+ "modified": "2026-02-06 12:39:23.598620",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
