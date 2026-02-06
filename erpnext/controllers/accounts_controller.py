@@ -645,7 +645,6 @@ class AccountsController(TransactionBase):
 		if (
 			self.is_return
 			or (self.doctype == "Purchase Invoice" and self.is_paid)
-			or (self.doctype == "Sales Invoice" and self.is_pos)
 			or self.get("is_opening") == "Yes"
 		):
 			self.payment_terms_template = ""
@@ -2506,7 +2505,7 @@ class AccountsController(TransactionBase):
 			self.remove(item)
 
 	def set_payment_schedule(self):
-		if (self.doctype == "Sales Invoice" and self.is_pos) or self.get("is_opening") == "Yes":
+		if self.get("is_opening") == "Yes":
 			self.payment_terms_template = ""
 			return
 
