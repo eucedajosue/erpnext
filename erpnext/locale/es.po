@@ -4180,7 +4180,7 @@ msgstr ""
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Allow UOM with Conversion Rate Defined in Item"
-msgstr ""
+msgstr "Permitir UOM con tasa de conversión definida en el artículo"
 
 #. Label of the allow_discount_change (Check) field in DocType 'POS Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
@@ -4268,7 +4268,7 @@ msgstr "Permitir editar la cantidad de stock en UdM para documentos de ventas"
 #. (Check) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Allow to Make Quality Inspection after Purchase / Delivery"
-msgstr ""
+msgstr "Permitir realizar una inspección de calidad después de la compra/entrega"
 
 #. Description of the 'Allow Excess Material Transfer' (Check) field in DocType
 #. 'Manufacturing Settings'
@@ -6172,13 +6172,13 @@ msgstr "Reserva automática de números de serie y de lote"
 #. Label of the auto_reserve_stock (Check) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Auto Reserve Stock"
-msgstr ""
+msgstr "Reserva Automática de Inventario"
 
 #. Label of the auto_reserve_stock_for_sales_order_on_purchase (Check) field in
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Auto Reserve Stock for Sales Order on Purchase"
-msgstr "Reserva automática de stock para órdenes de venta en el momento de la compra"
+msgstr "Reserva Automática de stock para órdenes de venta en el momento de la compra"
 
 #: erpnext/accounts/doctype/accounts_settings/accounts_settings.py:148
 msgid "Auto Tax Settings Error"
@@ -11575,7 +11575,7 @@ msgstr ""
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Convert Item Description to Clean HTML in Transactions"
-msgstr ""
+msgstr "Convertir la descripción del artículo a HTML limpio en las transacciones"
 
 #: erpnext/accounts/doctype/account/account.js:106
 #: erpnext/accounts/doctype/cost_center/cost_center.js:123
@@ -16214,13 +16214,13 @@ msgstr "No desglosar"
 #. field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Do Not Update Serial / Batch on Creation of Auto Bundle"
-msgstr ""
+msgstr "No actualizar el número de serie/lote al crear un paquete automático"
 
 #. Label of the do_not_use_batchwise_valuation (Check) field in DocType 'Stock
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Do Not Use Batch-wise Valuation"
-msgstr ""
+msgstr "No utilice la valoración por Lotes"
 
 #. Description of the 'Hide Currency Symbol' (Select) field in DocType 'Global
 #. Defaults'
@@ -20783,7 +20783,7 @@ msgstr "Posee variantes"
 #. Label of the use_naming_series (Check) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Have Default Naming Series for Batch ID?"
-msgstr ""
+msgstr "¿Tiene una serie de nombres predeterminada para el ID de lote?"
 
 #: erpnext/setup/setup_wizard/data/designation.txt:19
 msgid "Head of Marketing and Sales"
@@ -21343,13 +21343,13 @@ msgstr ""
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "If enabled, the source and target warehouse in the Material Transfer Stock Entry must be different else an error will be thrown. If inventory dimensions are present, same source and target warehouse can be allowed but atleast any one of the inventory dimension fields must be different."
-msgstr ""
+msgstr "Si se habilita esta opción, el almacén de origen y el de destino en la entrada de stock de transferencia de material deben ser diferentes; de lo contrario, se generará un error. Si existen dimensiones de inventario, se pueden permitir los mismos almacenes de origen y destino, pero al menos uno de los campos de dimensión de inventario debe ser diferente."
 
 #. Description of the 'Allow UOM with Conversion Rate Defined in Item' (Check)
 #. field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "If enabled, the system will allow selecting UOMs in sales and purchase transactions only if the conversion rate is set in the item master."
-msgstr ""
+msgstr "Si está habilitado, el sistema permitirá seleccionar unidades de medida en transacciones de compra y venta solo si la tasa de conversión está configurada en el maestro de artículos."
 
 #. Description of the 'Allow Editing of Items and Quantities in Work Order'
 #. (Check) field in DocType 'Manufacturing Settings'
@@ -21373,7 +21373,7 @@ msgstr ""
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "If enabled, the system will use the moving average valuation method to calculate the valuation rate for the batched items and will not consider the individual batch-wise incoming rate."
-msgstr ""
+msgstr "Si está habilitado, el sistema utilizará el método de valoración promedio móvil para calcular la tasa de valoración de los artículos agrupados en lotes y no considerará la tasa de entrada por lote individual."
 
 #. Description of the 'Validate Applied Rule' (Check) field in DocType 'Pricing
 #. Rule'
@@ -21408,7 +21408,7 @@ msgstr ""
 #. (Link) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "If mentioned, the system will allow only the users with this Role to create or modify any stock transaction earlier than the latest stock transaction for a specific item and warehouse. If set as blank, it allows all users to create/edit back-dated transactions."
-msgstr ""
+msgstr "Si se menciona, el sistema solo permitirá a los usuarios con este rol crear o modificar cualquier transacción de stock anterior a la última transacción de stock para un artículo y almacén específicos. Si se deja en blanco, todos los usuarios pueden crear o editar transacciones retroactivas."
 
 #. Description of the 'To Package No.' (Int) field in DocType 'Packing Slip'
 #: erpnext/stock/doctype/packing_slip/packing_slip.json
@@ -30328,7 +30328,7 @@ msgstr ""
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "On submission of the stock transaction, system will auto create the Serial and Batch Bundle based on the Serial No / Batch fields."
-msgstr ""
+msgstr "Al enviar la transacción de acciones, el sistema creará automáticamente el paquete de serie y lote según los campos Número de Srie/Lote."
 
 #. Option for the 'Stop Reason' (Select) field in DocType 'Downtime Entry'
 #: erpnext/manufacturing/doctype/downtime_entry/downtime_entry.json
@@ -31455,7 +31455,7 @@ msgstr "Tolerancia por exceso de entrega/recepción (%)"
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Over Picking Allowance"
-msgstr ""
+msgstr "Subsidio por exceso de recolección"
 
 #: erpnext/controllers/stock_controller.py:1677
 msgid "Over Receipt"
@@ -31468,13 +31468,13 @@ msgstr ""
 #. Label of the mr_qty_allowance (Float) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Over Transfer Allowance"
-msgstr ""
+msgstr "Asignación por exceso de transferencia"
 
 #. Label of the over_transfer_allowance (Float) field in DocType 'Buying
 #. Settings'
 #: erpnext/buying/doctype/buying_settings/buying_settings.json
 msgid "Over Transfer Allowance (%)"
-msgstr ""
+msgstr "Asignación por exceso de transferencia (%)"
 
 #: erpnext/controllers/status_updater.py:474
 msgid "Overbilling of {0} {1} ignored for item {2} because you have {3} role."
@@ -33804,7 +33804,7 @@ msgstr "Farmacéuticos"
 #: erpnext/crm/doctype/lead/lead.json
 #: erpnext/crm/doctype/opportunity/opportunity.json
 msgid "Phone Ext."
-msgstr ""
+msgstr "Extensión Telefónica"
 
 #. Label of the phone_no (Data) field in DocType 'Company'
 #. Label of the phone_no (Data) field in DocType 'Warehouse'
@@ -35822,7 +35822,7 @@ msgstr "El tipo de divisa para la lista de precios no ha sido seleccionado"
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Price List Defaults"
-msgstr ""
+msgstr "Lista de Precios Predeterminada"
 
 #. Label of the plc_conversion_rate (Float) field in DocType 'POS Invoice'
 #. Label of the plc_conversion_rate (Float) field in DocType 'Purchase Invoice'
@@ -38176,7 +38176,7 @@ msgstr "Inspección de calidad requerida"
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Quality Inspection Settings"
-msgstr ""
+msgstr "Configuración de inspección de calidad"
 
 #. Name of a report
 #. Label of a Link in the Manufacturing Workspace
@@ -41448,7 +41448,7 @@ msgstr ""
 #. field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Role Allowed to Create/Edit Back-dated Transactions"
-msgstr ""
+msgstr "Rol permitido para crear o editar transacciones retroactivas"
 
 #. Label of the stock_auth_role (Link) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
@@ -41465,7 +41465,7 @@ msgstr ""
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Role Allowed to Over Deliver/Receive"
-msgstr ""
+msgstr "Rol permitido para entregar/recibir más de lo esperado"
 
 #. Label of the role_to_override_stop_action (Link) field in DocType 'Accounts
 #. Settings'
@@ -44680,13 +44680,13 @@ msgstr ""
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Serial & Batch Item"
-msgstr ""
+msgstr "Serie & Lote de Artículo"
 
 #. Label of the section_break_7 (Section Break) field in DocType 'Stock
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Serial & Batch Item Settings"
-msgstr ""
+msgstr "Configuración de Serie & Lote de Artículo"
 
 #. Label of the serial_and_batch_bundle (Link) field in DocType 'Stock
 #. Reconciliation Item'
@@ -45028,7 +45028,7 @@ msgstr ""
 #: erpnext/stock/report/stock_ledger_invariant_check/stock_ledger_invariant_check.py:177
 #: erpnext/subcontracting/doctype/subcontracting_receipt_item/subcontracting_receipt_item.json
 msgid "Serial and Batch Bundle"
-msgstr ""
+msgstr "Paquete de Serie y Lote"
 
 #: erpnext/stock/doctype/serial_and_batch_bundle/serial_and_batch_bundle.py:1858
 msgid "Serial and Batch Bundle created"
@@ -45535,7 +45535,7 @@ msgstr ""
 #. (Check) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Set Serial and Batch Bundle Naming Based on Naming Series"
-msgstr ""
+msgstr "Establecer nombres de paquetes de serie y lotes según la serie de nombres"
 
 #. Label of the set_warehouse (Link) field in DocType 'Sales Order'
 #. Label of the set_warehouse (Link) field in DocType 'Delivery Note'
@@ -47041,7 +47041,7 @@ msgstr ""
 #. Label of the stock_closing_tab (Tab Break) field in DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Stock Closing"
-msgstr ""
+msgstr "Cierre de Inventario"
 
 #. Name of a DocType
 #: erpnext/stock/doctype/stock_closing_balance/stock_closing_balance.json
@@ -47280,7 +47280,7 @@ msgstr ""
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Stock Planning"
-msgstr ""
+msgstr "Planificación de Stock"
 
 #. Name of a report
 #. Label of a Link in the Stock Workspace
@@ -47397,22 +47397,22 @@ msgstr ""
 #: erpnext/subcontracting/doctype/subcontracting_order/subcontracting_order.js:220
 #: erpnext/subcontracting/doctype/subcontracting_order/subcontracting_order_dashboard.py:14
 msgid "Stock Reservation"
-msgstr ""
+msgstr "Reserva de Inventario"
 
 #: erpnext/stock/doctype/stock_reservation_entry/stock_reservation_entry.py:1824
 msgid "Stock Reservation Entries Cancelled"
-msgstr ""
+msgstr "Se Cancelaron las Entradas de Reserva de Inventario"
 
 #: erpnext/controllers/subcontracting_inward_controller.py:995
 #: erpnext/manufacturing/doctype/production_plan/production_plan.py:2211
 #: erpnext/manufacturing/doctype/work_order/work_order.py:2059
 #: erpnext/stock/doctype/stock_reservation_entry/stock_reservation_entry.py:1776
 msgid "Stock Reservation Entries Created"
-msgstr ""
+msgstr "Se Crearon las Entradas de Reserva de Inventario"
 
 #: erpnext/subcontracting/doctype/subcontracting_order/subcontracting_order.py:445
 msgid "Stock Reservation Entries created"
-msgstr ""
+msgstr "Se Crearon las Entradas de Reserva de Inventario"
 
 #. Name of a DocType
 #: erpnext/public/js/stock_reservation.js:309
@@ -47423,7 +47423,7 @@ msgstr ""
 #: erpnext/stock/report/reserved_stock/reserved_stock.py:171
 #: erpnext/subcontracting/doctype/subcontracting_order/subcontracting_order.js:343
 msgid "Stock Reservation Entry"
-msgstr ""
+msgstr "Entradas de Reserva de Inventario"
 
 #: erpnext/stock/doctype/stock_reservation_entry/stock_reservation_entry.py:571
 msgid "Stock Reservation Entry cannot be updated as it has been delivered."
@@ -47496,7 +47496,7 @@ msgstr "Transacciones de Stock"
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Stock Transactions Settings"
-msgstr ""
+msgstr "Configuración de transacciones de acciones"
 
 #. Label of the stock_uom (Link) field in DocType 'POS Invoice Item'
 #. Label of the stock_uom (Link) field in DocType 'Purchase Invoice Item'
@@ -47594,7 +47594,7 @@ msgstr "Unidad de media utilizada en el almacen"
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Stock UOM Quantity"
-msgstr ""
+msgstr "Cantidad UOM de stock"
 
 #: erpnext/public/js/stock_reservation.js:230
 #: erpnext/selling/doctype/sales_order/sales_order.js:451
@@ -47668,7 +47668,7 @@ msgstr "Usuario de Almacén"
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Stock Validations"
-msgstr ""
+msgstr "Validaciones de acciones"
 
 #. Label of the stock_value (Float) field in DocType 'Bin'
 #. Label of the value (Currency) field in DocType 'Quick Stock Balance'
@@ -47684,7 +47684,7 @@ msgstr "Valor de Inventarios"
 #. Label of a chart in the Stock Workspace
 #: erpnext/stock/workspace/stock/stock.json
 msgid "Stock Value by Item Group"
-msgstr ""
+msgstr "Valor de existencias por grupo de artículos"
 
 #. Name of a report
 #: erpnext/stock/report/stock_and_account_value_comparison/stock_and_account_value_comparison.json
@@ -47736,7 +47736,7 @@ msgstr "Las operaciones de inventario antes de {0} se encuentran congeladas"
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Stock transactions that are older than the mentioned days cannot be modified."
-msgstr ""
+msgstr "Las transacciones bursátiles con antigüedad superior a los días mencionados no podrán ser modificadas."
 
 #. Description of the 'Auto Reserve Stock for Sales Order on Purchase' (Check)
 #. field in DocType 'Stock Settings'
@@ -47985,7 +47985,7 @@ msgstr ""
 #: erpnext/selling/doctype/sales_order/sales_order_dashboard.py:33
 #: erpnext/selling/doctype/selling_settings/selling_settings.json
 msgid "Subcontracting Inward"
-msgstr ""
+msgstr "Subcontratación interna"
 
 #. Label of the subcontracting_inward_order (Link) field in DocType 'Work
 #. Order'
@@ -50500,19 +50500,19 @@ msgstr ""
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "The percentage you are allowed to pick more items in the pick list than the ordered quantity."
-msgstr ""
+msgstr "El porcentaje en el que se le permite elegir más artículos en la lista de selección que la cantidad solicitada."
 
 #. Description of the 'Over Delivery/Receipt Allowance (%)' (Float) field in
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "The percentage you are allowed to receive or deliver more against the quantity ordered. For example, if you have ordered 100 units, and your Allowance is 10%, then you are allowed to receive 110 units."
-msgstr ""
+msgstr "El porcentaje que se le permite recibir o entregar de más respecto a la cantidad solicitada. Por ejemplo, si ha pedido 100 unidades y su margen es del 10%, podrá recibir 110 unidades."
 
 #. Description of the 'Over Transfer Allowance' (Float) field in DocType 'Stock
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "The percentage you are allowed to transfer more against the quantity ordered. For example, if you have ordered 100 units, and your Allowance is 10%, then you are allowed transfer 110 units."
-msgstr ""
+msgstr "El porcentaje que se permite transferir de más de la cantidad solicitada. Por ejemplo, si ha pedido 100 unidades y su límite es del 10%, se permiten transferir 110 unidades."
 
 #: erpnext/public/js/utils.js:863
 msgid "The reserved stock will be released when you update items. Are you certain you wish to proceed?"
@@ -51610,7 +51610,7 @@ msgstr "Total Conseguido"
 #. Label of a number card in the Stock Workspace
 #: erpnext/stock/workspace/stock/stock.json
 msgid "Total Active Items"
-msgstr ""
+msgstr "Total de artículos activos"
 
 #: erpnext/accounts/report/budget_variance_report/budget_variance_report.py:127
 msgid "Total Actual"
@@ -52172,7 +52172,7 @@ msgstr "Resumen de stock total"
 #. Label of a number card in the Stock Workspace
 #: erpnext/stock/workspace/stock/stock.json
 msgid "Total Stock Value"
-msgstr ""
+msgstr "Valor total de las acciones"
 
 #. Label of the total_supplied_qty (Float) field in DocType 'Purchase Order
 #. Item Supplied'
@@ -53536,7 +53536,7 @@ msgstr "Actualizar stock actual"
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Update Existing Price List Rate"
-msgstr ""
+msgstr "Actualizar la tarifa de lista de precios existente"
 
 #: erpnext/buying/doctype/purchase_order/purchase_order.js:366
 #: erpnext/buying/doctype/supplier_quotation/supplier_quotation.js:35
@@ -53561,7 +53561,7 @@ msgstr ""
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Update Price List Based On"
-msgstr ""
+msgstr "Actualizar lista de precios en base a"
 
 #: erpnext/accounts/doctype/cheque_print_template/cheque_print_template.js:10
 msgid "Update Print Format"
@@ -53669,7 +53669,7 @@ msgstr ""
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Upon submission of the Sales Order, Work Order, or Production Plan, the system will automatically reserve the stock."
-msgstr ""
+msgstr "Al enviar la orden de venta, orden de trabajo o plan de producción, el sistema reservará automáticamente el stock."
 
 #: erpnext/setup/setup_wizard/operations/install_fixtures.py:311
 #: erpnext/setup/setup_wizard/operations/install_fixtures.py:423
@@ -53779,7 +53779,7 @@ msgstr ""
 #. Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Use Serial / Batch Fields"
-msgstr ""
+msgstr "Usar campos de Serie/Lote"
 
 #. Label of the use_serial_batch_fields (Check) field in DocType 'POS Invoice
 #. Item'
@@ -53855,7 +53855,7 @@ msgstr ""
 
 #: erpnext/setup/install.py:194
 msgid "User Forum"
-msgstr ""
+msgstr "Foro del Usuario"
 
 #: erpnext/setup/doctype/sales_person/sales_person.py:113
 msgid "User ID not set for Employee {0}"
@@ -53925,7 +53925,7 @@ msgstr ""
 #. DocType 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Users with this role are allowed to over deliver/receive against orders above the allowance percentage"
-msgstr ""
+msgstr "Los usuarios con este rol pueden entregar o recibir pedidos en exceso del porcentaje permitido."
 
 #. Description of the 'Role to Notify on Depreciation Failure' (Link) field in
 #. DocType 'Accounts Settings'
@@ -54071,7 +54071,7 @@ msgstr ""
 #. 'Stock Settings'
 #: erpnext/stock/doctype/stock_settings/stock_settings.json
 msgid "Validate Material Transfer Warehouses"
-msgstr ""
+msgstr "Validar almacenes de transferencia de materiales"
 
 #. Label of the validate_negative_stock (Check) field in DocType 'Inventory
 #. Dimension'
@@ -57170,3 +57170,48 @@ msgstr "Campaña UTM"
 
 msgid "Filters"
 msgstr "Filtros"
+
+msgid "User"
+msgstr "Usuario"
+
+msgid "Phone"
+msgstr "Teléfono"
+
+msgid "Location"
+msgstr "Ubicación"
+
+msgid "Login Activity"
+msgstr "Actividad de inicio de sesión"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+msgid "If enabled, do not update serial / batch values in the stock transactions on creation of auto Serial / Batch Bundle."
+msgstr "Si está habilitado, no actualice los valores de serie/lote en las transacciones de stock al crear un paquete de serie/lote automático."
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Warehouse wise Stock Value"
+msgstr "Valor de existencias por almacén"
+
+msgid "Delivery Trends"
+msgstr "Tendencias de entrega"
+
+msgid "Item Shortage Summary"
+msgstr "Resumen de escasez de artículos"
+
+msgid "Monthly"
+msgstr "Mensualmente"
+
+msgid "Quarterly"
+msgstr "Trimestral"
+
+msgid "Weekly"
+msgstr "Semanal"
+
+msgid "Yearly"
+msgstr "Anual"
+
+msgid "Oldest Items"
+msgstr "Artículos más antiguos"
