@@ -2295,7 +2295,7 @@ msgstr "Acción si no se mantiene la misma tarifa durante todo el ciclo de venta
 #. Label of the action_on_new_invoice (Select) field in DocType 'POS Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
 msgid "Action on New Invoice"
-msgstr ""
+msgstr "Acción al Crear Factura"
 
 #. Label of the actions_performed (Text Editor) field in DocType 'Asset
 #. Maintenance Log'
@@ -4072,7 +4072,7 @@ msgstr "Permitir horas extraordinarias"
 #. Label of the allow_partial_payment (Check) field in DocType 'POS Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
 msgid "Allow Partial Payment"
-msgstr ""
+msgstr "Permitir pago parcial"
 
 #. Label of the allow_partial_reservation (Check) field in DocType 'Stock
 #. Settings'
@@ -4395,7 +4395,7 @@ msgstr "También puede descargar la plantilla y rellenar ahí sus datos."
 #. Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
 msgid "Always Ask"
-msgstr ""
+msgstr "Preguntar Siempre"
 
 #. Label of the amount (Currency) field in DocType 'Advance Payment Ledger
 #. Entry'
@@ -10874,7 +10874,7 @@ msgstr "Trabajo completo"
 
 #: erpnext/selling/page/point_of_sale/pos_payment.js:24
 msgid "Complete Order"
-msgstr "Pedido completo"
+msgstr "Confirmar Pedido"
 
 #. Label of the completed_by (Link) field in DocType 'Task'
 #: erpnext/projects/doctype/task/task.json
@@ -15648,7 +15648,7 @@ msgstr "Desactivar última tasa de compra"
 #: erpnext/stock/doctype/delivery_note/delivery_note.json
 #: erpnext/stock/doctype/purchase_receipt/purchase_receipt.json
 msgid "Disable Rounded Total"
-msgstr ""
+msgstr "Deshabilitar Redondeo al Total"
 
 #. Label of the disable_serial_no_and_batch_selector (Check) field in DocType
 #. 'Stock Settings'
@@ -15722,7 +15722,7 @@ msgstr "Desembolsado"
 #. Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
 msgid "Discard Changes and Load New Invoice"
-msgstr ""
+msgstr "Descartar Cambios y Crear Nueva Factura"
 
 #. Label of the discount (Float) field in DocType 'Payment Schedule'
 #. Label of the discount (Float) field in DocType 'Payment Term'
@@ -16843,7 +16843,7 @@ msgstr "Resumen de correo: {0}"
 
 #: erpnext/selling/page/point_of_sale/pos_past_order_summary.js:50
 msgid "Email Receipt"
-msgstr ""
+msgstr "Enviar por Email"
 
 #. Label of the email_sent (Check) field in DocType 'Request for Quotation
 #. Supplier'
@@ -28743,7 +28743,7 @@ msgstr ""
 
 #: erpnext/accounts/doctype/sales_invoice/sales_invoice.py:1170
 msgid "Multiple POS Opening Entry"
-msgstr ""
+msgstr "Entrada de apertura de múltiples puntos de venta"
 
 #: erpnext/accounts/doctype/pricing_rule/utils.py:346
 msgid "Multiple Price Rules exists with same criteria, please resolve conflict by assigning priority. Price Rules: {0}"
@@ -29292,7 +29292,7 @@ msgstr "Nuevo Ingreso"
 
 #: erpnext/selling/page/point_of_sale/pos_controller.js:259
 msgid "New Invoice"
-msgstr ""
+msgstr "Nueva Factura"
 
 #: erpnext/accounts/doctype/payment_reconciliation/payment_reconciliation.js:337
 msgid "New Journal Entry will be posted for the difference amount. The Posting Date can be modified."
@@ -29616,7 +29616,7 @@ msgstr "No se encontraron artículos. Escanee el código de barras nuevamente."
 
 #: erpnext/selling/page/point_of_sale/pos_item_cart.js:76
 msgid "No items in cart"
-msgstr ""
+msgstr "No hay artículos en el carrito"
 
 #: erpnext/setup/doctype/email_digest/email_digest.py:166
 msgid "No items to be received are overdue"
@@ -29710,11 +29710,11 @@ msgstr ""
 
 #: erpnext/accounts/doctype/sales_invoice/sales_invoice.py:1164
 msgid "No open POS Opening Entry found for POS Profile {0}."
-msgstr ""
+msgstr "No se encontró ninguna entrada de apertura de POS abierta para el perfil de POS {0}."
 
 #: erpnext/public/js/templates/crm_activities.html:145
 msgid "No open event"
-msgstr ""
+msgstr "No hay evento abierto"
 
 #: erpnext/public/js/templates/crm_activities.html:57
 msgid "No open task"
@@ -30942,7 +30942,7 @@ msgstr ""
 
 #: erpnext/selling/page/sales_funnel/sales_funnel.js:48
 msgid "Opportunities by Source"
-msgstr ""
+msgstr "Oportunidades por Fuente"
 
 #. Label of the opportunity (Link) field in DocType 'Request for Quotation'
 #. Label of the opportunity (Link) field in DocType 'Supplier Quotation'
@@ -31026,7 +31026,7 @@ msgstr ""
 #: erpnext/crm/report/opportunity_summary_by_sales_stage/opportunity_summary_by_sales_stage.js:46
 #: erpnext/crm/report/sales_pipeline_analytics/sales_pipeline_analytics.js:58
 msgid "Opportunity Source"
-msgstr ""
+msgstr "Fuente de Oportunidad"
 
 #. Label of a Link in the CRM Workspace
 #: erpnext/crm/workspace/crm/crm.json
@@ -31351,7 +31351,7 @@ msgstr ""
 #: erpnext/accounts/doctype/sales_invoice/sales_invoice.py:1177
 #: erpnext/selling/page/point_of_sale/pos_controller.js:208
 msgid "Outdated POS Opening Entry"
-msgstr ""
+msgstr "Entrada de Apertura de POS Obsoleta"
 
 #. Label of the outgoing_rate (Float) field in DocType 'Serial and Batch Entry'
 #. Label of the outgoing_rate (Currency) field in DocType 'Stock Ledger Entry'
@@ -31754,15 +31754,15 @@ msgstr "Entrada de apertura POS"
 
 #: erpnext/accounts/doctype/sales_invoice/sales_invoice.py:1178
 msgid "POS Opening Entry - {0} is outdated. Please close the POS and create a new POS Opening Entry."
-msgstr ""
+msgstr "Entrada de Apertura del POS: {0} está desactualizada. Cierre el POS y cree una nueva."
 
 #: erpnext/accounts/doctype/pos_opening_entry/pos_opening_entry.py:121
 msgid "POS Opening Entry Cancellation Error"
-msgstr ""
+msgstr "Error de cancelación de entrada de apertura de POS"
 
 #: erpnext/selling/page/point_of_sale/pos_controller.js:183
 msgid "POS Opening Entry Cancelled"
-msgstr ""
+msgstr "Entrada de apertura de POS cancelada"
 
 #. Name of a DocType
 #: erpnext/accounts/doctype/pos_opening_entry_detail/pos_opening_entry_detail.json
@@ -31775,15 +31775,15 @@ msgstr ""
 
 #: erpnext/accounts/doctype/sales_invoice/sales_invoice.py:1163
 msgid "POS Opening Entry Missing"
-msgstr ""
+msgstr "Falta la entrada de apertura del POS"
 
 #: erpnext/accounts/doctype/pos_opening_entry/pos_opening_entry.py:122
 msgid "POS Opening Entry cannot be cancelled as unconsolidated Invoices exists."
-msgstr ""
+msgstr "La entrada de apertura de POS no se puede cancelar porque existen facturas no consolidadas."
 
 #: erpnext/selling/page/point_of_sale/pos_controller.js:189
 msgid "POS Opening Entry has been cancelled. Please refresh the page."
-msgstr ""
+msgstr "La entrada de apertura del punto de venta se ha cancelado. Actualice la página."
 
 #. Name of a DocType
 #: erpnext/accounts/doctype/pos_payment_method/pos_payment_method.json
@@ -33638,7 +33638,7 @@ msgstr ""
 #. Closing Entry'
 #: erpnext/accounts/doctype/pos_closing_entry/pos_closing_entry.json
 msgid "Period Details"
-msgstr ""
+msgstr "Detalles del período"
 
 #. Label of the period_end_date (Date) field in DocType 'Period Closing
 #. Voucher'
@@ -37837,18 +37837,18 @@ msgstr ""
 #: erpnext/stock/doctype/delivery_note_item/delivery_note_item.json
 #: erpnext/stock/doctype/pick_list_item/pick_list_item.json
 msgid "Qty (Warehouse)"
-msgstr ""
+msgstr "Cantidad (Almacén)"
 
 #. Label of the stock_qty (Float) field in DocType 'Pick List Item'
 #: erpnext/stock/doctype/pick_list_item/pick_list_item.json
 msgid "Qty (in Stock UOM)"
-msgstr ""
+msgstr "Cantidad (en stock UOM)"
 
 #. Label of the qty_after_transaction (Float) field in DocType 'Stock Ledger
 #. Entry'
 #: erpnext/stock/doctype/stock_ledger_entry/stock_ledger_entry.json
 msgid "Qty After Transaction"
-msgstr ""
+msgstr "Cantidad después de la transacción"
 
 #. Label of the actual_qty (Float) field in DocType 'Stock Closing Balance'
 #. Label of the actual_qty (Float) field in DocType 'Stock Ledger Entry'
@@ -37858,7 +37858,7 @@ msgstr ""
 #: erpnext/stock/report/stock_ledger_invariant_check/stock_ledger_invariant_check.py:188
 #: erpnext/stock/report/stock_ledger_variance/stock_ledger_variance.py:91
 msgid "Qty Change"
-msgstr ""
+msgstr "Cambio de cantidad"
 
 #. Label of the qty_consumed_per_unit (Float) field in DocType 'BOM Explosion
 #. Item'
@@ -39520,11 +39520,11 @@ msgstr "Recepción"
 #: erpnext/selling/page/point_of_sale/pos_controller.js:297
 #: erpnext/selling/page/point_of_sale/pos_past_order_list.js:17
 msgid "Recent Orders"
-msgstr ""
+msgstr "Facturas Recientes"
 
 #: erpnext/selling/page/point_of_sale/pos_item_cart.js:891
 msgid "Recent Transactions"
-msgstr ""
+msgstr "Traducciones Recientes"
 
 #. Label of the recipient_and_message (Section Break) field in DocType 'Payment
 #. Request'
@@ -40017,7 +40017,7 @@ msgstr "Restante"
 
 #: erpnext/selling/page/point_of_sale/pos_payment.js:684
 msgid "Remaining Amount"
-msgstr ""
+msgstr "Cambio"
 
 #: erpnext/accounts/doctype/process_statement_of_accounts/process_statement_of_accounts_accounts_receivable.html:189
 #: erpnext/accounts/report/accounts_receivable/accounts_receivable.html:156
@@ -43503,7 +43503,7 @@ msgstr "Metas de socio de ventas"
 #. Label of a Link in the Selling Workspace
 #: erpnext/selling/workspace/selling/selling.json
 msgid "Sales Partner Target Variance Based On Item Group"
-msgstr ""
+msgstr "Variación objetivo del socio de ventas según el grupo de artículos"
 
 #. Name of a report
 #: erpnext/selling/report/sales_partner_target_variance_based_on_item_group/sales_partner_target_variance_based_on_item_group.json
@@ -43573,7 +43573,7 @@ msgstr "Resumen de Pago de Ventas"
 #: erpnext/selling/workspace/selling/selling.json
 #: erpnext/setup/doctype/sales_person/sales_person.json
 msgid "Sales Person"
-msgstr "Persona de ventas"
+msgstr "Vendedor"
 
 #: erpnext/controllers/selling_controller.py:270
 msgid "Sales Person <b>{0}</b> is disabled."
@@ -43818,7 +43818,7 @@ msgstr "Sancionada"
 #. Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
 msgid "Save Changes and Load New Invoice"
-msgstr ""
+msgstr "Guardar Cambios y Crear Nueva Factura"
 
 #: erpnext/templates/includes/order/order_taxes.html:34
 #: erpnext/templates/includes/order/order_taxes.html:85
@@ -44097,7 +44097,7 @@ msgstr "Buscar por ID de factura o nombre de cliente"
 
 #: erpnext/selling/page/point_of_sale/pos_item_selector.js:181
 msgid "Search by item code, serial number or barcode"
-msgstr ""
+msgstr "Buscar por código de artículo, número de serie o código de barras"
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -45461,7 +45461,7 @@ msgstr ""
 #. Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
 msgid "Set Grand Total to Default Payment Method"
-msgstr ""
+msgstr "Establecer el total general al método de pago predeterminado"
 
 #. Description of the 'Territory Targets' (Section Break) field in DocType
 #. 'Territory'
@@ -46930,13 +46930,13 @@ msgstr "Posición inicial desde el borde superior de partida"
 #. Agreement'
 #: erpnext/support/doctype/service_level_agreement/service_level_agreement.json
 msgid "Status Details"
-msgstr ""
+msgstr "Estado Detallado"
 
 #. Label of the illustration_section (Section Break) field in DocType
 #. 'Workstation'
 #: erpnext/manufacturing/doctype/workstation/workstation.json
 msgid "Status Illustration"
-msgstr ""
+msgstr "Ilustración de Estado"
 
 #: erpnext/projects/doctype/project/project.py:712
 msgid "Status must be Cancelled or Completed"
@@ -46948,7 +46948,7 @@ msgstr "El estado debe ser uno de {0}"
 
 #: erpnext/stock/doctype/quality_inspection/quality_inspection.py:271
 msgid "Status set to rejected as there are one or more rejected readings."
-msgstr ""
+msgstr "Estado establecido como rechazado porque hay una o más lecturas rechazadas."
 
 #. Description of the 'Supplier Details' (Text) field in DocType 'Supplier'
 #: erpnext/buying/doctype/supplier/supplier.json
@@ -48172,17 +48172,17 @@ msgstr "Subdivisión"
 #: erpnext/buying/doctype/purchase_order/purchase_order.py:964
 #: erpnext/subcontracting/doctype/subcontracting_receipt/subcontracting_receipt.py:1048
 msgid "Submit Action Failed"
-msgstr ""
+msgstr "Acción Enviar Fallida"
 
 #. Label of the submit_err_jv (Check) field in DocType 'Company'
 #: erpnext/setup/doctype/company/company.json
 msgid "Submit ERR Journals?"
-msgstr ""
+msgstr "¿Enviar Diarios ERR?"
 
 #. Label of the submit_invoice (Check) field in DocType 'Subscription'
 #: erpnext/accounts/doctype/subscription/subscription.json
 msgid "Submit Generated Invoices"
-msgstr ""
+msgstr "Enviar Facturas Generadas"
 
 #. Label of the submit_journal_entries (Check) field in DocType 'Accounts
 #. Settings'
@@ -50340,7 +50340,7 @@ msgstr ""
 
 #: erpnext/selling/page/point_of_sale/pos_controller.js:209
 msgid "The current POS opening entry is outdated. Please close it and create a new one."
-msgstr ""
+msgstr "La entrada de apertura del TPV actual está desactualizada. Ciérrela y cree una nueva."
 
 #: erpnext/manufacturing/doctype/work_order/work_order.js:1126
 msgid "The default BOM for that item will be fetched by the system. You can also change the BOM."
@@ -52157,7 +52157,7 @@ msgstr "Ingresos Totales"
 
 #: erpnext/selling/report/item_wise_sales_history/item_wise_sales_history.py:256
 msgid "Total Sales Amount"
-msgstr ""
+msgstr "Monto Total de Ventas"
 
 #. Label of the total_sales_amount (Currency) field in DocType 'Project'
 #: erpnext/projects/doctype/project/project.json
@@ -52231,7 +52231,7 @@ msgstr "Impuesto Total"
 #: erpnext/stock/doctype/delivery_note/delivery_note.json
 #: erpnext/stock/doctype/purchase_receipt/purchase_receipt.json
 msgid "Total Taxes and Charges"
-msgstr ""
+msgstr "Impuestos y Cargos Totales"
 
 #. Label of the base_total_taxes_and_charges (Currency) field in DocType
 #. 'Payment Entry'
@@ -56674,7 +56674,7 @@ msgstr "{0} está en espera hasta {1}"
 
 #: erpnext/accounts/doctype/pos_opening_entry/pos_opening_entry.py:68
 msgid "{0} is open. Close the POS or cancel the existing POS Opening Entry to create a new POS Opening Entry."
-msgstr ""
+msgstr "{0} está abierto. Cierre el POS o cancele la entrada de apertura existente para crear una nueva."
 
 #: erpnext/manufacturing/doctype/work_order/work_order.js:483
 msgid "{0} items in progress"
@@ -57087,3 +57087,86 @@ msgstr "{} {} ya está vinculado con {} {}"
 msgid "{} {} is not affecting bank account {}"
 msgstr ""
 
+msgid "Cash Withdrawal"
+msgstr "Retiro de Efectivo"
+
+msgid "Payment on account"
+msgstr "Pago A Cuenta"
+
+msgid "Totals"
+msgstr "Totales"
+
+msgid "Add row"
+msgstr "Agregar registro"
+
+msgid "Home"
+msgstr "Inicio"
+
+msgid "Reports"
+msgstr "Reportes"
+
+msgid "Setting"
+msgstr "Ajustes"
+
+msgid "Average Order Value"
+msgstr "Valor Promedio de Pedidos"
+
+msgid "Status"
+msgstr "Estado"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "Notification"
+msgstr "Notificación"
+
+msgid "Help"
+msgstr "Ayuda"
+
+msgid "Website"
+msgstr "Sitio web"
+
+msgid "Submit"
+msgstr "Enviar"
+
+msgid "Last Edited by {}"
+msgstr "Última Edición Por {}"
+
+msgid "You"
+msgstr "Usted"
+
+msgid "Created By {}"
+msgstr "Creado Por {}"
+
+msgid "Duplicate"
+msgstr "Clonar"
+
+msgid "POS Payment Entries"
+msgstr "Entradas de pago POS"
+
+msgid "{} Submitted"
+msgstr "Enviado por {}"
+
+msgid "Filtered By {}"
+msgstr "Filtrado por {}"
+
+msgid "Fullscreen"
+msgstr "Pantalla Completa"
+
+msgid "Payment Terms not set for customer {}"
+msgstr "Condiciones de pago no establecidas para el cliente {}"
+
+msgid "New Order"
+msgstr "Nuevo Pedido"
+
+msgid "Source"
+msgstr "Origen"
+
+msgid "Campaign"
+msgstr "Campaña"
+
+msgid "Medium"
+msgstr "Campaña UTM"
+
+msgid "Filters"
+msgstr "Filtros"
