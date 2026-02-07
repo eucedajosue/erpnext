@@ -2297,8 +2297,12 @@
   },
   {
    "fieldname": "saldo_anterior",
-   "fieldtype": "Data",
-   "label": "Saldo Anterior"
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Saldo Anterior",
+   "options": "currency",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -2312,7 +2316,7 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2026-02-06 17:43:12.591998",
+ "modified": "2026-02-06 19:37:22.291198",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",
