@@ -2544,6 +2544,18 @@ class AccountsController(TransactionBase):
 					grand_total * self.get("conversion_rate"), self.precision("base_grand_total")
 				)
 
+		if self.doctype == "Sales Invoice" and self.is_pos and self.get("paid_amount"):
+			if party_account_currency == self.company_currency:
+				base_grand_total -= flt(self.base_paid_amount)
+				grand_total = flt(
+					base_grand_total / self.get("conversion_rate"), self.precision("grand_total")
+				)
+			else:
+				grand_total -= flt(self.paid_amount)
+				base_grand_total = flt(
+					grand_total * self.get("conversion_rate"), self.precision("base_grand_total")
+				)
+
 		if not self.get("payment_schedule"):
 			if (
 				self.doctype in ["Sales Invoice", "Purchase Invoice"]

@@ -14,6 +14,7 @@
   "tax_id",
   "company",
   "company_tax_id",
+  "saldo_anterior",
   "column_break1",
   "posting_date",
   "posting_time",
@@ -2293,6 +2294,11 @@
    "fieldname": "override_tax_withholding_entries",
    "fieldtype": "Check",
    "label": "Edit Tax Withholding Entries"
+  },
+  {
+   "fieldname": "saldo_anterior",
+   "fieldtype": "Data",
+   "label": "Saldo Anterior"
   }
  ],
  "grid_page_length": 50,
@@ -2306,7 +2312,7 @@
    "link_fieldname": "consolidated_invoice"
   }
  ],
- "modified": "2026-02-06 12:39:23.598620",
+ "modified": "2026-02-06 17:43:12.591998",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Sales Invoice",

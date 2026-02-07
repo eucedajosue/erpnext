@@ -547,6 +547,20 @@ erpnext.PointOfSale.ItemCart = class {
 								});
 						}
 
+						frappe.call({
+							method: "erpnext.accounts.utils.get_balance_on",
+							args: {
+								party_type: "Customer",
+								party: customer,
+								date: frappe.datetime.now_date()
+							},
+							callback: (r) => {
+								if (!r.exc) {
+									frappe.model.set_value(frm.doc.doctype, frm.doc.name, "saldo_anterior", r.message);
+								}
+							}
+						});
+
 						// if loyalty program then fetch loyalty points too
 						if (loyalty_program) {
 							frappe.call({
