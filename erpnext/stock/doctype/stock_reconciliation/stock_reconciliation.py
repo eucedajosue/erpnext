@@ -623,13 +623,17 @@ class StockReconciliation(StockController):
 				)
 
 			if row.qty and row.valuation_rate in ["", None]:
-				row.valuation_rate = get_stock_balance(
-					row.item_code,
-					row.warehouse,
-					self.posting_date,
-					self.posting_time,
-					with_valuation_rate=True,
-				)[1]
+				row.valuation_rate = frappe.get_value("Item", row.item_code, "valuation_rate")
+
+				if not row.valuation_rate:
+					row.valuation_rate = get_stock_balance(
+						row.item_code,
+						row.warehouse,
+						self.posting_date,
+						self.posting_time,
+						with_valuation_rate=True,
+					)[1]
+
 				if not row.valuation_rate:
 					# try if there is a buying price list in default currency
 					buying_rate = frappe.db.get_value(
@@ -639,10 +643,6 @@ class StockReconciliation(StockController):
 					)
 					if buying_rate:
 						row.valuation_rate = buying_rate
-
-					else:
-						# get valuation rate from Item
-						row.valuation_rate = frappe.get_value("Item", row.item_code, "valuation_rate")
 
 		# throw all validation messages
 		if self.validation_messages:

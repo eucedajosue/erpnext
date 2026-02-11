@@ -217,7 +217,7 @@ frappe.ui.form.on("Stock Reconciliation", {
 					if (!frm.doc.scan_mode) {
 						frappe.model.set_value(cdt, cdn, "qty", r.message.qty);
 					}
-					frappe.model.set_value(cdt, cdn, "valuation_rate", r.message.rate);
+					frappe.model.set_value(cdt, cdn, "valuation_rate", r.message.item_valuation_rate || r.message.rate);
 					frappe.model.set_value(cdt, cdn, "current_qty", r.message.qty);
 					frappe.model.set_value(cdt, cdn, "current_valuation_rate", r.message.rate);
 					frappe.model.set_value(cdt, cdn, "current_amount", r.message.rate * r.message.qty);
