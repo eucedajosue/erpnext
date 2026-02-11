@@ -219,6 +219,16 @@ function add_to_transaction(d, frm) {
 		...(d.doctype === "POS Invoice" && { pos_invoice: d.name }),
 		...(d.doctype === "Sales Invoice" && { sales_invoice: d.name }),
 	});
+
+	if (flt(d.outstanding_amount) > 0) {
+		frm.add_child("sales_invoices_outstanding", {
+			posting_date: d.posting_date,
+			grand_total: d.grand_total,
+			outstanding_amount: d.outstanding_amount,
+			customer: d.customer,
+			invoice: d.name
+		});
+	}
 }
 
 function refresh_payments(payments, frm) {
@@ -253,6 +263,7 @@ function add_taxes(taxes, frm) {
 function reset_values(frm) {
 	frm.set_value("pos_invoices", []);
 	frm.set_value("sales_invoices", []);
+	frm.set_value("sales_invoices_outstanding", []);
 	frm.set_value("payment_reconciliation", []);
 	frm.set_value("taxes", []);
 	frm.set_value("grand_total", 0);
@@ -264,6 +275,7 @@ function reset_values(frm) {
 function refresh_fields(frm) {
 	frm.refresh_field("pos_invoices");
 	frm.refresh_field("sales_invoices");
+	frm.refresh_field("sales_invoices_outstanding");
 	frm.refresh_field("payment_reconciliation");
 	frm.refresh_field("taxes");
 	frm.refresh_field("grand_total");

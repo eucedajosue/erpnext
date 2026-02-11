@@ -25,11 +25,12 @@ class POSClosingEntry(StatusUpdater):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from cm_app.cm_app.doctype.pos_payment_entry.pos_payment_entry import POSPaymentEntry
 		from erpnext.accounts.doctype.pos_closing_entry_detail.pos_closing_entry_detail import POSClosingEntryDetail
 		from erpnext.accounts.doctype.pos_closing_entry_taxes.pos_closing_entry_taxes import POSClosingEntryTaxes
 		from erpnext.accounts.doctype.pos_invoice_reference.pos_invoice_reference import POSInvoiceReference
+		from erpnext.accounts.doctype.pos_payment_entry.pos_payment_entry import POSPaymentEntry
 		from erpnext.accounts.doctype.sales_invoice_reference.sales_invoice_reference import SalesInvoiceReference
+		from erpnext.accounts.doctype.sales_invoices_outstanding.sales_invoices_outstanding import sales_invoices_outstanding
 		from frappe.types import DF
 
 		amended_from: DF.Link | None
@@ -47,6 +48,7 @@ class POSClosingEntry(StatusUpdater):
 		posting_date: DF.Date
 		posting_time: DF.Time
 		sales_invoices: DF.Table[SalesInvoiceReference]
+		sales_invoices_outstanding: DF.Table[sales_invoices_outstanding]
 		status: DF.Literal["Draft", "Submitted", "Queued", "Failed", "Cancelled"]
 		taxes: DF.Table[POSClosingEntryTaxes]
 		total_quantity: DF.Float
@@ -407,6 +409,7 @@ def build_invoice_query(invoice_doctype, user, pos_profile, start, end):
 			InvoiceDocType.customer,
 			InvoiceDocType.posting_date,
 			InvoiceDocType.grand_total,
+			InvoiceDocType.outstanding_amount,
 			InvoiceDocType.net_total,
 			InvoiceDocType.total_qty,
 			InvoiceDocType.total_taxes_and_charges,

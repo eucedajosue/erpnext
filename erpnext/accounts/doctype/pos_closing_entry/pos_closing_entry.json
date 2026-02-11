@@ -22,6 +22,7 @@
   "section_break_12",
   "pos_invoices",
   "sales_invoices",
+  "sales_invoices_outstanding",
   "pos_payment_entries",
   "taxes_and_charges_section",
   "taxes",
@@ -258,6 +259,13 @@
    "fieldtype": "Table",
    "label": "POS Payment Entries",
    "options": "POS Payment Entry"
+  },
+  {
+   "fieldname": "sales_invoices_outstanding",
+   "fieldtype": "Table",
+   "label": "Sales Invoices Outstanding",
+   "options": "sales_invoices_outstanding",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -268,7 +276,7 @@
    "link_fieldname": "pos_closing_entry"
   }
  ],
- "modified": "2026-02-02 12:10:12.719627",
+ "modified": "2026-02-11 11:35:13.639227",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "POS Closing Entry",
