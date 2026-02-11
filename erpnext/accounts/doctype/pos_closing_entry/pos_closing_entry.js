@@ -161,7 +161,7 @@ frappe.ui.form.on("POS Closing Entry", {
 					r.message.forEach(entry => {
 						frm.add_child("pos_payment_entries", {
 							payment_entry: entry.name,
-							posting_date: entry.posting_date,
+							date: entry.posting_date,
 							mode_of_payment: entry.mode_of_payment,
 							amount: entry.paid_amount
 						});
