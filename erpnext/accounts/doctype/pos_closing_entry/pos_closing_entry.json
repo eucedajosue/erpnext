@@ -258,7 +258,8 @@
    "fieldname": "pos_payment_entries",
    "fieldtype": "Table",
    "label": "POS Payment Entries",
-   "options": "POS Payment Entry"
+   "options": "POS Payment Entry",
+   "read_only": 1
   },
   {
    "fieldname": "sales_invoices_outstanding",
@@ -276,7 +277,7 @@
    "link_fieldname": "pos_closing_entry"
   }
  ],
- "modified": "2026-02-11 11:35:13.639227",
+ "modified": "2026-02-11 12:01:12.492430",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "POS Closing Entry",
