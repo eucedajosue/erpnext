@@ -100,7 +100,7 @@ class PaymentEntry(AccountsController):
 		is_opening: DF.Literal["No", "Yes"]
 		is_pos_cash_movement: DF.Check
 		letter_head: DF.Link | None
-		mode_of_payment: DF.Link | None
+		mode_of_payment: DF.Link
 		naming_series: DF.Literal["ACC-PAY-.YYYY.-"]
 		override_tax_withholding_entries: DF.Check
 		paid_amount: DF.Currency
