@@ -48172,31 +48172,31 @@ msgstr "Subdivisión"
 #: erpnext/buying/doctype/purchase_order/purchase_order.py:964
 #: erpnext/subcontracting/doctype/subcontracting_receipt/subcontracting_receipt.py:1048
 msgid "Submit Action Failed"
-msgstr "Acción Enviar Fallida"
+msgstr "Acción Registrar Fallida"
 
 #. Label of the submit_err_jv (Check) field in DocType 'Company'
 #: erpnext/setup/doctype/company/company.json
 msgid "Submit ERR Journals?"
-msgstr "¿Enviar Diarios ERR?"
+msgstr "¿Registrar Diarios ERR?"
 
 #. Label of the submit_invoice (Check) field in DocType 'Subscription'
 #: erpnext/accounts/doctype/subscription/subscription.json
 msgid "Submit Generated Invoices"
-msgstr "Enviar Facturas Generadas"
+msgstr "Registrar Facturas Generadas"
 
 #. Label of the submit_journal_entries (Check) field in DocType 'Accounts
 #. Settings'
 #: erpnext/accounts/doctype/accounts_settings/accounts_settings.json
 msgid "Submit Journal Entries"
-msgstr "Validar entradas de diario"
+msgstr "Registrar entradas de diario"
 
 #: erpnext/manufacturing/doctype/work_order/work_order.js:192
 msgid "Submit this Work Order for further processing."
-msgstr "Valide esta Orden de Trabajo para su posterior procesamiento."
+msgstr "Registrar esta Orden de Trabajo para su posterior procesamiento."
 
 #: erpnext/buying/doctype/request_for_quotation/request_for_quotation.py:281
 msgid "Submit your Quotation"
-msgstr "Validar su presupuesto"
+msgstr "Registrar su cotización"
 
 #. Label of the subscription (Link) field in DocType 'Process Subscription'
 #. Label of the subscription_section (Section Break) field in DocType 'Purchase
@@ -57127,7 +57127,7 @@ msgid "Website"
 msgstr "Sitio web"
 
 msgid "Submit"
-msgstr "Enviar"
+msgstr "Registrar"
 
 msgid "Last Edited by {}"
 msgstr "Última Edición Por {}"
