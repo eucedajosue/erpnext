@@ -135,10 +135,45 @@ erpnext.PointOfSale.Payment = class {
 		});
 
 		this.numpad_value = "";
+
+		// add an Exact button to the payment numpad (shows remaining amount, never negative)
+		const doc = this.events.get_frm().doc || {};
+		const grand_total = cint(frappe.sys_defaults.disable_rounded_total) ? doc.grand_total : doc.rounded_total;
+		let remaining = flt((grand_total || 0) - (doc.paid_amount || 0));
+		remaining = Math.max(0, remaining); // never negative
+		const $numpad_container = this.$numpad.find('.numpad-container');
+		if ($numpad_container.length && $numpad_container.find('.exact-numpad-btn').length === 0) {
+			$numpad_container.append(
+				`<div class="numpad-btn exact-numpad-btn" data-button-value="exact" data-amount="${remaining}">${format_currency(remaining, doc.currency)}</div>`
+			);
+		}  
 	}
 
 	on_numpad_clicked($btn, from_numpad = true) {
 		const button_value = from_numpad ? $btn.attr("data-button-value") : $btn;
+
+		// handle Exact button on numpad
+		if (button_value === "exact") {
+			if (!this.selected_mode) {
+				frappe.show_alert({
+					message: __("Select a Payment Method."),
+					indicator: "yellow",
+				});
+				return;
+			}
+
+			const doc = this.events.get_frm().doc;
+			const grand_total = cint(frappe.sys_defaults.disable_rounded_total) ? doc.grand_total : doc.rounded_total;
+		let remaining = flt((grand_total || 0) - (doc.paid_amount || 0));
+		remaining = Math.max(0, remaining); // ensure non-negative
+			const current = flt(this.selected_mode.get_value()) || 0;
+			this.selected_mode.set_value(current + remaining);
+
+			const number_format_details = get_number_format_info(frappe.sys_defaults.number_format);
+			const precision = frappe.sys_defaults.currency_precision || number_format_details.precision;
+			this.numpad_value = ((current + remaining) * 10 ** precision).toFixed(0).toString();
+			return;
+		}
 
 		from_numpad && highlight_numpad_btn($btn);
 		if (!this.selected_mode) {
@@ -147,7 +182,7 @@ erpnext.PointOfSale.Payment = class {
 				indicator: "yellow",
 			});
 			return;
-		}
+		} 
 
 		const number_format_details = get_number_format_info(frappe.sys_defaults.number_format);
 		const precision = frappe.sys_defaults.currency_precision || number_format_details.precision;
@@ -236,10 +271,18 @@ erpnext.PointOfSale.Payment = class {
 
 		this.$payment_modes.on("click", ".shortcut-btn", function (e) {
 			e.stopPropagation();
-			const amount = $(this).data("amount");
-			const mode = $(this).closest(".mode-of-payment").data("mode");
+			const $btn = $(this);
+			const mode = $btn.closest(".mode-of-payment").data("mode");
 			const control = me[`${mode}_control`];
-			if (control) {
+			if (!control) return;
+
+			// Exact payment: set this control to cover remaining amount
+			
+
+			if ($btn.data("clear") || $btn.hasClass("clear-shortcut")) {
+				control.set_value(0);
+			} else {
+				const amount = flt($btn.data("amount")) || 0;
 				const current = flt(control.get_value()) || 0;
 				control.set_value(current + amount);
 			}
@@ -546,7 +589,7 @@ erpnext.PointOfSale.Payment = class {
 							${p.mode_of_payment}
 							<div class="${mode}-amount pay-amount">${amount}</div>
 							<div class="${mode} mode-of-payment-control"></div>
-							<div class="${mode}-shortcuts payment-shortcuts" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;"></div>
+							<div class="${mode}-shortcuts payment-shortcuts" style="display: none; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px;"></div>
 						</div>
 					</div>
 				`;
@@ -581,11 +624,19 @@ erpnext.PointOfSale.Payment = class {
 			this[`${mode}_control`].set_value(p.amount);
 
 			const $shortcuts = this.$payment_modes.find(`.${mode}-shortcuts`);
-			const shortcuts = [50, 100, 200, 500];
+			const grand_total = cint(frappe.sys_defaults.disable_rounded_total) ? doc.grand_total : doc.rounded_total;
+			const remaining_amount = grand_total - doc.paid_amount;
+			const shortcuts = [50, 100, 200, 500,'C'];
 			shortcuts.forEach((amount) => {
-				$shortcuts.append(
-					`<div class="shortcut-btn btn btn-default" style="padding: 10px; font-weight: bold; font-size: 14px;" data-amount="${amount}">${amount}</div>`
-				);
+				if (amount === 'C') {
+					$shortcuts.append(
+						`<div class="shortcut-btn btn btn-default clear-shortcut" style="padding: 10px; font-weight: bold; font-size: 14px;" data-clear="1">C</div>`
+					);
+				} else {
+					$shortcuts.append(
+						`<div class="shortcut-btn btn btn-default" style="padding: 10px; font-weight: bold; font-size: 14px;" data-amount="${amount}">${amount}</div>`
+					);
+				}
 			});
 		});
 		this.highlight_selected_mode();
@@ -743,6 +794,14 @@ erpnext.PointOfSale.Payment = class {
 			)}</div>
 			</div>`
 		);
+
+		// update Exact button on numpad (if present)
+		const $exact_numpad = this.$numpad.find('.exact-numpad-btn');
+		if ($exact_numpad.length) {
+			const exact_amount = Math.max(0, remaining);
+			$exact_numpad.text(format_currency(exact_amount, currency));
+			$exact_numpad.attr('data-amount', exact_amount);
+		}
 	}
 
 	toggle_component(show) {
