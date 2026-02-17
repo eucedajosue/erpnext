@@ -219,7 +219,18 @@ erpnext.PointOfSale.Payment = class {
 				if (!mode_clicked_amount.innerHTML) {
 					mode_clicked_amount.innerHTML = format_currency(0, me.events.get_frm().doc.currency);
 				}
-				// me.auto_set_remaining_amount();
+
+				// show input control and hide static amount label
+				mode_clicked.find(".mode-of-payment-control").css("display", "block");
+				mode_clicked.find(`.${mode}-amount`).css("display", "none");
+
+				// focus the input so it's editable immediately (skip if read_only)
+				const control = me[`${mode}_control`];
+				if (control && !control.df.read_only && control.set_focus) {
+					setTimeout(() => control.set_focus(), 50);
+				}
+
+				// do not auto-fill remaining amount on select
 			}
 		});
 
