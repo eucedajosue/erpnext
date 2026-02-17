@@ -123,7 +123,7 @@ erpnext.PointOfSale.ItemSelector = class {
 	get_item_html(item) {
 		const me = this;
 		// eslint-disable-next-line no-unused-vars
-		const { item_image, serial_no, batch_no, barcode, actual_qty, uom, price_list_rate } = item;
+		const { item_image, serial_no, batch_no, barcode, actual_qty, uom, price_list_rate, has_serial_no, has_batch_no } = item;
 		const precision = flt(price_list_rate, 2) % 1 != 0 ? 2 : 0;
 		let indicator_color;
 		let qty_to_display = actual_qty;
@@ -166,6 +166,8 @@ erpnext.PointOfSale.ItemSelector = class {
 				data-batch-no="${escape(batch_no)}" data-uom="${escape(uom)}"
 				data-rate="${escape(price_list_rate || 0)}"
 				data-stock-uom="${escape(item.stock_uom)}"
+				data-has-serial-no="${escape(has_serial_no)}"
+				data-has-batch-no="${escape(has_batch_no)}"
 				title="${item.item_name}">
 
 				${get_item_image_html()}
@@ -332,6 +334,8 @@ toggle_group_and_items() {
 			let uom = unescape($item.attr("data-uom"));
 			let rate = unescape($item.attr("data-rate"));
 			let stock_uom = unescape($item.attr("data-stock-uom"));
+			let has_serial_no = unescape($item.attr("data-has-serial-no"));
+			let has_batch_no = unescape($item.attr("data-has-batch-no"));
 
 			// escape(undefined) returns "undefined" then unescape returns "undefined"
 			batch_no = batch_no === "undefined" ? undefined : batch_no;
@@ -339,11 +343,16 @@ toggle_group_and_items() {
 			uom = uom === "undefined" ? undefined : uom;
 			rate = rate === "undefined" ? undefined : rate;
 			stock_uom = stock_uom === "undefined" ? undefined : stock_uom;
+			has_serial_no = has_serial_no === "undefined" ? undefined : has_serial_no;
+			has_batch_no = has_batch_no === "undefined" ? undefined : has_batch_no;
+
+			has_serial_no = parseInt(has_serial_no) || 0;
+			has_batch_no = parseInt(has_batch_no) || 0;
 
 			me.events.item_selected({
 				field: "qty",
 				value: "+1",
-				item: { item_code, batch_no, serial_no, uom, rate, stock_uom },
+				item: { item_code, batch_no, serial_no, uom, rate, stock_uom, has_serial_no, has_batch_no },
 			});
 		});
 

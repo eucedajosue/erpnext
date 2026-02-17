@@ -135,7 +135,7 @@ erpnext.PointOfSale.ItemDetails = class {
 		this.$item_description.html(
 			`<label class="control-label" style="padding-right: 5px;">Descripción</label>
 			<textarea class="item-desc-input input-with-feedback form-control bold" 
-			style="width:100%; resize:none;">${description || ""}</textarea>`
+			style="width:100%;height: 60px !important; resize:none;" rows="2">${description || ""}</textarea>`
 		);
 		// Evento para actualizar la descripción
 		this.$item_description.find(".item-desc-input").on("input", (e) => {
@@ -182,6 +182,10 @@ erpnext.PointOfSale.ItemDetails = class {
 			this.$form_container.append(
 				`<div class="${fieldname}-control" data-fieldname="${fieldname}"></div>`
 			);
+
+			if (fieldname === "serial_no") {
+				this.$form_container.find(`.${fieldname}-control`).css("grid-column", "span 2");
+			}
 
 			const field_meta = this.item_meta.fields.find((df) => df.fieldname === fieldname);
 			fieldname === "discount_percentage" ? (field_meta.label = __("Discount (%)")) : "";
@@ -249,6 +253,14 @@ erpnext.PointOfSale.ItemDetails = class {
 			fields.push("item_tax_template");
 		}
 
+		if (item.has_serial_no === undefined && cur_pos?.item_selector?.items) {
+			const cached_item = cur_pos.item_selector.items.find((i) => i.item_code === item.item_code);
+			if (cached_item) {
+				if (item.has_serial_no === undefined) item.has_serial_no = cached_item.has_serial_no;
+				if (item.has_batch_no === undefined) item.has_batch_no = cached_item.has_batch_no;
+			}
+		}
+
 		if (item.has_serial_no || item.serial_no) fields.push("serial_no");
 		if (item.has_batch_no || item.batch_no) fields.push("batch_no");
 		return fields;
@@ -256,21 +268,20 @@ erpnext.PointOfSale.ItemDetails = class {
 
 	resize_serial_control(item) {
 		if (item.has_serial_no || item.serial_no) {
-			this.$form_container.find(".serial_no-control").find("textarea").css("height", "6rem");
+			this.$form_container.find(".serial_no-control").find("textarea").css("height", "3rem");
 		}
 	}
 
 	make_auto_serial_selection_btn(item) {
 		const doc = this.events.get_frm().doc;
 		if (!doc.is_return && (item.has_serial_no || item.serial_no)) {
-			if (!item.has_batch_no) {
-				this.$form_container.append(`<div class="grid-filler no-select"></div>`);
-			}
 			const label = __("Auto Fetch Serial Numbers");
 			this.$form_container.append(
-				`<div class="btn btn-sm btn-secondary auto-fetch-btn">${label}</div>`
+				`<div class="auto-fetch-btn-wrapper" style="grid-column: span 2;">
+					<div class="btn btn-sm btn-secondary auto-fetch-btn" style="width: 100%; margin-top: 0.5rem;">${label}</div>
+				</div>`
 			);
-			this.$form_container.find(".serial_no-control").find("textarea").css("height", "6rem");
+			this.$form_container.find(".serial_no-control").find("textarea").css("height", "3rem");
 		}
 	}
 

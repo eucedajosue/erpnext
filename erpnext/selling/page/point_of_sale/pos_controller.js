@@ -736,11 +736,11 @@ erpnext.PointOfSale.Controller = class {
 			} else {
 				if (!this.frm.doc.customer) return this.raise_customer_selection_alert();
 
-				const { item_code, batch_no, serial_no, rate, uom, stock_uom } = item;
+				const { item_code, batch_no, serial_no, rate, uom, stock_uom, has_serial_no, has_batch_no } = item;
 
 				if (!item_code) return;
 
-				const new_item = { item_code, batch_no, rate, uom, [field]: value, stock_uom };
+				const new_item = { item_code, batch_no, rate, uom, [field]: value, stock_uom, has_serial_no, has_batch_no };
 
 				if (serial_no) {
 					await this.check_serial_no_availablilty(item_code, this.frm.doc.set_warehouse, serial_no);
@@ -759,6 +759,11 @@ erpnext.PointOfSale.Controller = class {
 				}
 
 				await this.trigger_new_item_events(item_row);
+
+				if (item_row) {
+					if (has_serial_no !== undefined) item_row.has_serial_no = has_serial_no;
+					if (has_batch_no !== undefined) item_row.has_batch_no = has_batch_no;
+				}
 
 				this.update_cart_html(item_row);
 

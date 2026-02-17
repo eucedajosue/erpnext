@@ -36,6 +36,8 @@ def search_by_term(search_term, warehouse, price_list):
 		"batch_no": batch_no,
 		"description": item_doc.description,
 		"is_stock_item": item_doc.is_stock_item,
+		"has_serial_no": item_doc.has_serial_no,
+		"has_batch_no": item_doc.has_batch_no,
 		"item_code": item_doc.name,
 		"item_group": item_doc.item_group,
 		"item_image": item_doc.image,
@@ -167,7 +169,9 @@ def get_items(start, page_length, price_list, item_group, pos_profile, search_te
 			item.stock_uom,
 			item.image AS item_image,
 			item.is_stock_item,
-			item.sales_uom
+			item.sales_uom,
+			item.has_serial_no,
+			item.has_batch_no
 		FROM
 			`tabItem` item {bin_join_selection}
 		WHERE
