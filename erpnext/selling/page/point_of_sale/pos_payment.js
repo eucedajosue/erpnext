@@ -196,6 +196,7 @@ erpnext.PointOfSale.Payment = class {
 
 			// hide all control fields and shortcuts
 			$(`.mode-of-payment-control`).css("display", "none");
+			$(`.payment-shortcuts`).css("display", "none");
 			me.$payment_modes.find(`.pay-amount`).css("display", "inline");
 			me.$payment_modes.find(`.loyalty-amount-name`).css("display", "none");
 
@@ -211,13 +212,25 @@ erpnext.PointOfSale.Payment = class {
 			} else {
 				// clicked one is not selected then select it
 				mode_clicked.addClass("border-primary");
+				mode_clicked.find(".payment-shortcuts").css("display", "grid");
 
 				me.selected_mode = me[`${mode}_control`];
 				const mode_clicked_amount = mode_clicked.find(`.${mode}-amount`).get(0);
 				if (!mode_clicked_amount.innerHTML) {
 					mode_clicked_amount.innerHTML = format_currency(0, me.events.get_frm().doc.currency);
 				}
-				me.auto_set_remaining_amount();
+				// me.auto_set_remaining_amount();
+			}
+		});
+
+		this.$payment_modes.on("click", ".shortcut-btn", function (e) {
+			e.stopPropagation();
+			const amount = $(this).data("amount");
+			const mode = $(this).closest(".mode-of-payment").data("mode");
+			const control = me[`${mode}_control`];
+			if (control) {
+				const current = flt(control.get_value()) || 0;
+				control.set_value(current + amount);
 			}
 		});
 
@@ -522,6 +535,7 @@ erpnext.PointOfSale.Payment = class {
 							${p.mode_of_payment}
 							<div class="${mode}-amount pay-amount">${amount}</div>
 							<div class="${mode} mode-of-payment-control"></div>
+							<div class="${mode}-shortcuts payment-shortcuts" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;"></div>
 						</div>
 					</div>
 				`;
@@ -554,6 +568,14 @@ erpnext.PointOfSale.Payment = class {
 			});
 			this[`${mode}_control`].toggle_label(false);
 			this[`${mode}_control`].set_value(p.amount);
+
+			const $shortcuts = this.$payment_modes.find(`.${mode}-shortcuts`);
+			const shortcuts = [50, 100, 200, 500];
+			shortcuts.forEach((amount) => {
+				$shortcuts.append(
+					`<div class="shortcut-btn btn btn-default" style="padding: 10px; font-weight: bold; font-size: 14px;" data-amount="${amount}">${amount}</div>`
+				);
+			});
 		});
 		this.highlight_selected_mode();
 
@@ -658,7 +680,11 @@ erpnext.PointOfSale.Payment = class {
 	highlight_selected_mode() {
 		if (this.selected_mode) {
 			const mode = this.sanitize_mode_of_payment(this.selected_mode.df.label);
-			this.$payment_modes.find(`.mode-of-payment[data-mode="${mode}"]`).addClass("border-primary");
+			const $payment_mode = this.$payment_modes.find(`.mode-of-payment[data-mode="${mode}"]`);
+			$payment_mode.addClass("border-primary");
+			$payment_mode.find(".mode-of-payment-control").css("display", "block");
+			$payment_mode.find(".payment-shortcuts").css("display", "grid");
+			$payment_mode.find(".pay-amount").css("display", "none");
 		}
 	}
 
