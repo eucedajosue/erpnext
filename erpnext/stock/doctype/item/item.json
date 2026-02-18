@@ -311,6 +311,7 @@
   {
    "fieldname": "barcodes",
    "fieldtype": "Table",
+   "in_filter": 1,
    "label": "Barcodes",
    "options": "Item Barcode"
   },
@@ -931,10 +932,10 @@
    "fieldtype": "Section Break"
   },
   {
+   "depends_on": "is_purchase_item",
    "fieldname": "purchase_tax_withholding_category",
    "fieldtype": "Link",
    "label": "Purchase Tax Withholding Category",
-   "depends_on": "is_purchase_item",
    "options": "Tax Withholding Category"
   },
   {
@@ -942,10 +943,10 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "is_sales_item",
    "fieldname": "sales_tax_withholding_category",
    "fieldtype": "Link",
    "label": "Sales Tax Withholding Category",
-   "depends_on": "is_sales_item",
    "options": "Tax Withholding Category"
   }
  ],
@@ -954,7 +955,7 @@
  "image_field": "image",
  "links": [],
  "make_attachments_public": 1,
- "modified": "2025-12-15 20:08:35.634046",
+ "modified": "2026-02-18 09:05:47.543314",
  "modified_by": "Administrator",
  "module": "Stock",
  "name": "Item",
@@ -1020,7 +1021,7 @@
  ],
  "quick_entry": 1,
  "row_format": "Dynamic",
- "search_fields": "item_name,description,item_group,customer_code",
+ "search_fields": "item_name,description,item_group",
  "show_name_in_global_search": 1,
  "show_preview_popup": 1,
  "sort_field": "creation",
