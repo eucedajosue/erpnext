@@ -57218,3 +57218,6 @@ msgstr "Artículos más antiguos"
 
 msgid "Create Invoice from Sales Order"
 msgstr "Crear Factura desde Orden de Venta"
+
+msgid "Load"
+msgstr "Cargar"
