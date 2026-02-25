@@ -711,7 +711,6 @@
    "fetch_from": "company.book_advance_payments_in_separate_party_account",
    "fieldname": "book_advance_payments_in_separate_party_account",
    "fieldtype": "Check",
-   "hidden": 1,
    "label": "Book Advance Payments in Separate Party Account",
    "no_copy": 1,
    "read_only": 1
@@ -823,7 +822,7 @@
    "table_fieldname": "payment_entries"
   }
  ],
- "modified": "2026-02-11 08:13:31.148004",
+ "modified": "2026-02-03 16:08:49.800381",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payment Entry",
