@@ -284,14 +284,11 @@ erpnext.PointOfSale.Controller = class {
 			return;
 		}
 
-		const customer = this.frm?.doc?.customer;
 		const filters = {
 			docstatus: 1,
 			company: this.company,
 			per_billed: ["<", 100],
 		};
-
-		if (customer) filters.customer = customer;
 
 		const dialog = new frappe.ui.Dialog({
 			title: __("Create Invoice from Sales Order"),
@@ -322,13 +319,11 @@ erpnext.PointOfSale.Controller = class {
 		try {
 			frappe.dom.freeze();
 			await this.make_invoice_frm("Sales Invoice");
-			await this.set_pos_profile_data();
 
 			const response = await frappe.call({
 				method: "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice",
 				args: {
 					source_name: sales_order,
-					target_doc: this.frm.doc,
 				},
 			});
 
@@ -336,10 +331,22 @@ erpnext.PointOfSale.Controller = class {
 
 			frappe.model.sync(response.message);
 			this.frm.refresh(response.message.name);
+			this.frm.doc.__onload = this.frm.doc.__onload || {};
+			this.frm.doc.__onload.load_after_mapping = true;
 			this.frm.doc.is_pos = 1;
 			this.frm.doc.is_created_using_pos = 1;
 			this.frm.doc.pos_profile = this.pos_profile;
 			this.frm.doc.set_warehouse = this.settings.warehouse;
+			await this.set_pos_profile_data();
+
+			const sales_person = this.cart?.si_sales_person_field?.get_value?.() || "";
+			if (sales_person) {
+				(this.frm.doc.items || []).forEach((item) => {
+					if (!item.custom_sales_person) {
+						item.custom_sales_person = sales_person;
+					}
+				});
+			}
 
 			this.cart.load_invoice();
 			this.toggle_recent_order_list(false);
@@ -845,6 +852,7 @@ erpnext.PointOfSale.Controller = class {
 				new_item["warehouse"] = this.settings.warehouse;
 				if (field === "serial_no") new_item["qty"] = value.split(`\n`).length || 0;
 
+				const existing_items_snapshot = [...(this.frm.doc.items || [])];
 				item_row = this.frm.add_child("items", new_item);
 
 				if (field === "qty" && value !== 0 && !this.allow_negative_stock) {
@@ -859,7 +867,20 @@ erpnext.PointOfSale.Controller = class {
 					if (has_batch_no !== undefined) item_row.has_batch_no = has_batch_no;
 				}
 
-				this.update_cart_html(item_row);
+				const items_were_replaced =
+					existing_items_snapshot.length > 0 &&
+					(this.frm.doc.items || []).length === 1 &&
+					(this.frm.doc.items || [])[0].name === item_row?.name;
+
+				if (items_were_replaced) {
+					this.frm.doc.items = [...existing_items_snapshot, item_row];
+					this.frm.doc.items.forEach((row, idx) => {
+						row.idx = idx + 1;
+					});
+					this.cart.load_invoice();
+				} else {
+					this.update_cart_html(item_row);
+				}
 
 				if (this.item_details.$component.is(":visible")) this.edit_item_details_of(item_row);
 

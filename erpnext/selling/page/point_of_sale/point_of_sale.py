@@ -332,9 +332,6 @@ def sales_order_query(doctype, txt, searchfield, start, page_len, filters):
 	if filters.get("company"):
 		so_filters["company"] = filters.company
 
-	if filters.get("customer"):
-		so_filters["customer"] = filters.customer
-
 	orders = frappe.get_all(
 		"Sales Order",
 		filters=so_filters,
