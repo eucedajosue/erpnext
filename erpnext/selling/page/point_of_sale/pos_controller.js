@@ -261,9 +261,103 @@ erpnext.PointOfSale.Controller = class {
 
 		this.page.add_menu_item(__("Cash Withdrawal"), () => open_payment_entry("Pay"));
 		this.page.add_menu_item(__("Payment on account"), () => open_payment_entry("Receive"));
+		this.page.add_menu_item(
+			__("Create Invoice from Sales Order"),
+			this.open_sales_order_dialog.bind(this),
+			false,
+			"Ctrl+Shift+S"
+		);
 
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");
 		this.page.add_menu_item(__("Close the POS"), this.close_pos.bind(this), false, "Shift+Ctrl+C");
+	}
+
+	open_sales_order_dialog() {
+		if (this.settings.frm_doctype !== "Sales Invoice") {
+			frappe.msgprint({
+				title: __("Not Supported"),
+				indicator: "orange",
+				message: __(
+					"This action requires POS invoice type to be Sales Invoice in POS Settings."
+				),
+			});
+			return;
+		}
+
+		const customer = this.frm?.doc?.customer;
+		const filters = {
+			docstatus: 1,
+			company: this.company,
+			per_billed: ["<", 100],
+		};
+
+		if (customer) filters.customer = customer;
+
+		const dialog = new frappe.ui.Dialog({
+			title: __("Create Invoice from Sales Order"),
+			fields: [
+				{
+					fieldtype: "Link",
+					label: __("Sales Order"),
+					fieldname: "sales_order",
+					options: "Sales Order",
+					reqd: 1,
+					get_query: () => ({
+						query: "erpnext.selling.page.point_of_sale.point_of_sale.sales_order_query",
+						filters,
+					}),
+				},
+			],
+			primary_action_label: __("Load"),
+			primary_action: async ({ sales_order }) => {
+				dialog.hide();
+				await this.load_sales_order_on_pos(sales_order);
+			},
+		});
+
+		dialog.show();
+	}
+
+	async load_sales_order_on_pos(sales_order) {
+		try {
+			frappe.dom.freeze();
+			await this.make_invoice_frm("Sales Invoice");
+			await this.set_pos_profile_data();
+
+			const response = await frappe.call({
+				method: "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice",
+				args: {
+					source_name: sales_order,
+					target_doc: this.frm.doc,
+				},
+			});
+
+			if (!response.message) return;
+
+			frappe.model.sync(response.message);
+			this.frm.refresh(response.message.name);
+			this.frm.doc.is_pos = 1;
+			this.frm.doc.is_created_using_pos = 1;
+			this.frm.doc.pos_profile = this.pos_profile;
+			this.frm.doc.set_warehouse = this.settings.warehouse;
+
+			this.cart.load_invoice();
+			this.toggle_recent_order_list(false);
+			this.toggle_components(true);
+
+			frappe.show_alert({
+				indicator: "green",
+				message: __("Sales Order {0} loaded into POS invoice", [sales_order]),
+			});
+		} catch (error) {
+			frappe.msgprint({
+				title: __("Unable to load Sales Order"),
+				indicator: "red",
+				message: error?.message || __("Could not create invoice from this Sales Order."),
+			});
+		} finally {
+			frappe.dom.unfreeze();
+		}
 	}
 
 	prepare_btns() {

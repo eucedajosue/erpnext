@@ -118,31 +118,9 @@ erpnext.PointOfSale.ItemDetails = class {
 	render_dom(item) {
 		let { item_name, description, image, price_list_rate } = item;
 
-		function get_description_html() {
-			if (description) {
-				description =
-					description.indexOf("...") === -1 && description.length > 140
-						? description.substr(0, 139) + "..."
-						: description;
-				return description;
-			}
-			return ``;
-		}
-
 		this.$item_name.html(item_name);
 		this.$item_price.html(format_currency(price_list_rate, this.currency));
-		// Reemplazamos con un textarea editable
-		this.$item_description.html(
-			`<label class="control-label" style="padding-right: 5px;">Descripción</label>
-			<textarea class="item-desc-input input-with-feedback form-control bold" 
-			style="width:100%;height: 60px !important; resize:none;" rows="2">${description || ""}</textarea>`
-		);
-		// Evento para actualizar la descripción
-		this.$item_description.find(".item-desc-input").on("input", (e) => {
-			const new_desc = e.target.value;
-			item.description = new_desc;  // Actualiza en tu objeto local
-			this.events.form_updated(item, "description", new_desc); // Llama a tu evento para actualizar el cart
-		});
+		this.$item_description.html("");
 
 		if (!this.hide_images && image) {
 			this.$item_image.html(

@@ -695,7 +695,7 @@ erpnext.PointOfSale.ItemCart = class {
 	get_customer_image() {
 		const { customer, image } = this.customer_info || {};
 		if (image) {
-			return `<div class="customer-image"><img src="${image}" alt="${image}""></div>`;
+			return `<div class="customer-image"><img src="${image}" alt="${image}"></div>`;
 		} else {
 			return `<div class="customer-image customer-abbr">${frappe.get_abbr(customer)}</div>`;
 		}
@@ -830,8 +830,8 @@ erpnext.PointOfSale.ItemCart = class {
 		$item_to_update.html(
 			`
 			<div class="item-options">
-				<span class="remove-cart-item-btn" title="Eliminar" style="cursor:pointer;display:inline-block;">
-					<svg width="32" height="32" viewBox="0 0 14 14" fill="none">
+				<span class="remove-cart-item-btn" title="Eliminar">
+					<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
 						<path d="M4.93764 4.93759L7.00003 6.99998M9.06243 9.06238L7.00003 6.99998M7.00003 6.99998L4.93764 9.06238L9.06243 4.93759" stroke="#d9534f"></path>
 					</svg>
 				</span>
@@ -841,11 +841,10 @@ erpnext.PointOfSale.ItemCart = class {
 					${item_data.item_name}
 				</div>
         		${get_sales_person_html(item_data)}
-				${get_description_html()}
 			</div>
-			<div class="item-qty-actions" style="display:flex;gap:4px;align-items:center;margin-bottom:4px;">
-			<button class="qty-decrease-btn" title="Disminuir" style="background:#eee;border:none;border-radius:3px;width:24px;height:24px;font-weight:bold;font-size:16px;cursor:pointer;">-</button>
-			<button class="qty-increase-btn" title="Aumentar" style="background:#eee;border:none;border-radius:3px;width:24px;height:24px;font-weight:bold;font-size:16px;cursor:pointer;">+</button>
+			<div class="item-qty-actions">
+			<button type="button" class="qty-btn qty-decrease-btn" title="Disminuir">-</button>
+			<button type="button" class="qty-btn qty-increase-btn" title="Aumentar">+</button>
 			</div>
 			${get_rate_discount_html()}`
 		);
@@ -896,24 +895,6 @@ erpnext.PointOfSale.ItemCart = class {
 			}
 		}
 
-		function get_description_html() {
-			if (item_data.description) {
-				if (item_data.description.indexOf("<div>") != -1) {
-					try {
-						item_data.description = $(item_data.description).text();
-					} catch (error) {
-						item_data.description = item_data.description
-							.replace(/<div>/g, " ")
-							.replace(/<\/div>/g, " ")
-							.replace(/ +/g, " ");
-					}
-				}
-				item_data.description = frappe.ellipsis(item_data.description, 45);
-				return `<div class="item-desc">${item_data.description}</div>`;
-			}
-			return ``;
-		}
-
 		function get_item_image_html() {
 			const { image, item_name } = item_data;
 			if (!me.hide_images && image) {
@@ -921,7 +902,7 @@ erpnext.PointOfSale.ItemCart = class {
 					<div class="item-image">
 						<img
 							onerror="cur_pos.cart.handle_broken_image(this)"
-							src="${image}" alt="${frappe.get_abbr(item_name)}"">
+							src="${image}" alt="${frappe.get_abbr(item_name)}">
 					</div>`;
 			} else {
 				return `<div class="item-image item-abbr">${frappe.get_abbr(item_name)}</div>`;

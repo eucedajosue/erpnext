@@ -320,6 +320,46 @@ def item_group_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def sales_order_query(doctype, txt, searchfield, start, page_len, filters):
+	filters = frappe._dict(filters or {})
+
+	so_filters = {
+		"docstatus": 1,
+		"per_billed": ["<", 100],
+	}
+
+	if filters.get("company"):
+		so_filters["company"] = filters.company
+
+	if filters.get("customer"):
+		so_filters["customer"] = filters.customer
+
+	orders = frappe.get_all(
+		"Sales Order",
+		filters=so_filters,
+		or_filters={
+			"name": ["like", f"%{txt}%"],
+			"customer": ["like", f"%{txt}%"],
+			"customer_name": ["like", f"%{txt}%"],
+		},
+		fields=["name", "customer_name", "grand_total", "currency", "transaction_date"],
+		start=start,
+		page_length=page_len,
+		order_by="transaction_date desc, modified desc",
+	)
+
+	return [
+		(
+			order.name,
+			order.customer_name,
+			f"{frappe._('Total')}: {frappe.format_value(order.grand_total, {'fieldtype': 'Currency', 'options': order.currency})} | {frappe._('Date')}: {frappe.format(order.transaction_date, {'fieldtype': 'Date'})}",
+		)
+		for order in orders
+	]
+
+
+@frappe.whitelist()
 def check_opening_entry(user):
 	open_vouchers = frappe.db.get_all(
 		"POS Opening Entry",
