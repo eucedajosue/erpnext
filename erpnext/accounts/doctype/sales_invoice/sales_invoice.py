@@ -182,7 +182,7 @@ class SalesInvoice(SellingController):
 		return_against: DF.Link | None
 		rounded_total: DF.Currency
 		rounding_adjustment: DF.Currency
-		saldo_anterior: DF.Currency
+		custom_saldo_anterior: DF.Currency
 		sales_partner: DF.Link | None
 		sales_team: DF.Table[SalesTeam]
 		scan_barcode: DF.Data | None

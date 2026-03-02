@@ -556,7 +556,7 @@ erpnext.PointOfSale.ItemCart = class {
 							},
 							callback: (r) => {
 								if (!r.exc) {
-									frappe.model.set_value(frm.doc.doctype, frm.doc.name, "saldo_anterior", r.message);
+									frappe.model.set_value(frm.doc.doctype, frm.doc.name, "custom_saldo_anterior", r.message);
 								}
 							}
 						});
