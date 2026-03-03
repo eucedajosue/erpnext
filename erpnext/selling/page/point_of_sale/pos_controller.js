@@ -267,6 +267,12 @@ erpnext.PointOfSale.Controller = class {
 			false,
 			"Ctrl+Shift+S"
 		);
+		this.page.add_menu_item(
+			__("Create Quotation"),
+			this.create_quotation_from_pos.bind(this),
+			false,
+			"Ctrl+Shift+Q"
+		);
 
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");
 		this.page.add_menu_item(__("Close the POS"), this.close_pos.bind(this), false, "Shift+Ctrl+C");
@@ -361,6 +367,68 @@ erpnext.PointOfSale.Controller = class {
 				title: __("Unable to load Sales Order"),
 				indicator: "red",
 				message: error?.message || __("Could not create invoice from this Sales Order."),
+			});
+		} finally {
+			frappe.dom.unfreeze();
+		}
+	}
+
+	async create_quotation_from_pos() {
+		if (this.settings.frm_doctype !== "Sales Invoice") {
+			frappe.msgprint({
+				title: __("Not Supported"),
+				indicator: "orange",
+				message: __(
+					"This action requires POS invoice type to be Sales Invoice in POS Settings."
+				),
+			});
+			return;
+		}
+
+		if (!this.frm?.doc?.items?.length) {
+			frappe.show_alert({
+				message: __("You cannot create a quotation without items."),
+				indicator: "orange",
+			});
+			frappe.utils.play_sound("error");
+			return;
+		}
+
+		if (!this.frm.doc.customer) {
+			this.raise_customer_selection_alert();
+			return;
+		}
+
+		try {
+			frappe.dom.freeze();
+			const response = await frappe.call({
+				method: "erpnext.selling.page.point_of_sale.point_of_sale.make_quotation_from_cart",
+				args: {
+					cart_doc: this.frm.doc,
+				},
+			});
+
+			const quotation_name =
+				typeof response.message === "string" ? response.message : response.message?.name;
+
+			if (!quotation_name) {
+				frappe.throw(__("Could not determine created quotation."));
+			}
+			frappe.show_alert({
+				indicator: "green",
+				message: __("Quotation {0} submitted successfully", [quotation_name]),
+			});
+
+			const print_url = `${window.location.origin}/printview?doctype=Quotation&name=${encodeURIComponent(
+				quotation_name
+			)}&trigger_print=1&no_letterhead=0`;
+			window.open(print_url, "_blank");
+			this.load_new_invoice_on_pos();
+		} catch (error) {
+			frappe.msgprint({
+				title: __("Unable to create Quotation"),
+				indicator: "red",
+				message: error?.message || __("Could not create quotation from this POS invoice."),
 			});
 		} finally {
 			frappe.dom.unfreeze();

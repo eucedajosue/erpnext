@@ -6,7 +6,7 @@ import json
 
 import frappe
 from frappe.query_builder import DocType, Order
-from frappe.utils import cint, get_datetime
+from frappe.utils import cint, get_datetime, getdate
 from frappe.utils.nestedset import get_root_of
 
 from erpnext.accounts.doctype.pos_invoice.pos_invoice import get_item_group, get_stock_availability
@@ -354,6 +354,81 @@ def sales_order_query(doctype, txt, searchfield, start, page_len, filters):
 		)
 		for order in orders
 	]
+
+
+@frappe.whitelist()
+def make_quotation_from_cart(cart_doc):
+	cart_doc = frappe.parse_json(cart_doc) or {}
+
+	if not cart_doc.get("customer"):
+		frappe.throw(frappe._("Customer is required to create a quotation."))
+
+	items = cart_doc.get("items") or []
+	if not items:
+		frappe.throw(frappe._("At least one item is required to create a quotation."))
+
+	quotation = frappe.new_doc("Quotation")
+	quotation.quotation_to = "Customer"
+	quotation.party_name = cart_doc.get("customer")
+	quotation.company = cart_doc.get("company")
+	quotation.currency = cart_doc.get("currency")
+	quotation.selling_price_list = cart_doc.get("selling_price_list")
+	quotation.conversion_rate = cart_doc.get("conversion_rate")
+	quotation.transaction_date = cart_doc.get("posting_date") or getdate()
+
+	for item in items:
+		quotation.append(
+			"items",
+			{
+				"item_code": item.get("item_code"),
+				"item_name": item.get("item_name"),
+				"description": item.get("description"),
+				"qty": item.get("qty"),
+				"uom": item.get("uom"),
+				"stock_uom": item.get("stock_uom"),
+				"conversion_factor": item.get("conversion_factor"),
+				"rate": item.get("rate"),
+				"price_list_rate": item.get("price_list_rate"),
+				"discount_percentage": item.get("discount_percentage"),
+				"warehouse": item.get("warehouse"),
+				"income_account": item.get("income_account"),
+				"cost_center": item.get("cost_center"),
+				"item_tax_template": item.get("item_tax_template"),
+				"batch_no": item.get("batch_no"),
+				"serial_no": item.get("serial_no"),
+			}
+		)
+
+	for tax in cart_doc.get("taxes") or []:
+		quotation.append(
+			"taxes",
+			{
+				"charge_type": tax.get("charge_type"),
+				"account_head": tax.get("account_head"),
+				"description": tax.get("description"),
+				"rate": tax.get("rate"),
+				"cost_center": tax.get("cost_center"),
+			}
+		)
+
+	for member in cart_doc.get("sales_team") or []:
+		quotation.append(
+			"sales_team",
+			{
+				"sales_person": member.get("sales_person"),
+				"allocated_percentage": member.get("allocated_percentage"),
+				"commission_rate": member.get("commission_rate"),
+				"incentives": member.get("incentives"),
+			}
+		)
+
+	quotation.run_method("set_missing_values")
+	quotation.run_method("set_other_charges")
+	quotation.run_method("calculate_taxes_and_totals")
+	quotation.insert()
+	quotation.submit()
+
+	return {"name": quotation.name}
 
 
 @frappe.whitelist()
