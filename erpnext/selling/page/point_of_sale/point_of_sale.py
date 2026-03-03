@@ -357,6 +357,44 @@ def sales_order_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def quotation_query(doctype, txt, searchfield, start, page_len, filters):
+	filters = frappe._dict(filters or {})
+
+	quotation_filters = {
+		"docstatus": 1,
+		"quotation_to": "Customer",
+		"status": ["not in", ["Expired", "Lost", "Ordered"]],
+	}
+
+	if filters.get("company"):
+		quotation_filters["company"] = filters.company
+
+	quotations = frappe.get_all(
+		"Quotation",
+		filters=quotation_filters,
+		or_filters={
+			"name": ["like", f"%{txt}%"],
+			"party_name": ["like", f"%{txt}%"],
+			"customer_name": ["like", f"%{txt}%"],
+		},
+		fields=["name", "party_name", "customer_name", "grand_total", "currency", "transaction_date"],
+		start=start,
+		page_length=page_len,
+		order_by="transaction_date desc, modified desc",
+	)
+
+	return [
+		(
+			quotation.name,
+			quotation.customer_name or quotation.party_name,
+			f"{frappe._('Total')}: {frappe.format_value(quotation.grand_total, {'fieldtype': 'Currency', 'options': quotation.currency})} | {frappe._('Date')}: {frappe.format(quotation.transaction_date, {'fieldtype': 'Date'})}",
+		)
+		for quotation in quotations
+	]
+
+
+@frappe.whitelist()
 def make_quotation_from_cart(cart_doc):
 	cart_doc = frappe.parse_json(cart_doc) or {}
 
@@ -429,6 +467,43 @@ def make_quotation_from_cart(cart_doc):
 	quotation.submit()
 
 	return {"name": quotation.name}
+
+
+@frappe.whitelist()
+def update_quotation_status_from_pos_invoice(quotation, sales_invoice=None):
+	if not quotation:
+		return
+
+	if sales_invoice and not frappe.db.exists("Sales Invoice", sales_invoice):
+		return
+
+	if not frappe.db.exists("Quotation", quotation):
+		return
+
+	quotation_doc = frappe.get_doc("Quotation", quotation)
+	if quotation_doc.docstatus != 1:
+		return
+
+	if sales_invoice:
+		for item in quotation_doc.get("items") or []:
+			if not item.prevdoc_docname:
+				frappe.db.set_value(
+					"Quotation Item",
+					item.name,
+					{
+						"prevdoc_doctype": "Sales Invoice",
+						"prevdoc_docname": sales_invoice,
+					},
+					update_modified=False,
+				)
+
+	status_df = quotation_doc.meta.get_field("status")
+	status_options = []
+	if status_df and status_df.options:
+		status_options = [opt.strip() for opt in status_df.options.split("\n") if opt.strip()]
+
+	target_status = "Invoiced" if "Invoiced" in status_options else "Ordered"
+	frappe.db.set_value("Quotation", quotation_doc.name, "status", target_status, update_modified=True)
 
 
 @frappe.whitelist()

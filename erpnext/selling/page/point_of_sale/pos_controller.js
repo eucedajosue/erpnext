@@ -2,6 +2,7 @@ erpnext.PointOfSale.Controller = class {
 	constructor(wrapper) {
 		this.wrapper = $(wrapper).find(".layout-main-section");
 		this.page = wrapper.page;
+		this.source_quotation = null;
 
 		this.check_opening_entry();
 	}
@@ -268,6 +269,12 @@ erpnext.PointOfSale.Controller = class {
 			"Ctrl+Shift+S"
 		);
 		this.page.add_menu_item(
+			__("Create Invoice from Quotation"),
+			this.open_quotation_dialog.bind(this),
+			false,
+			"Ctrl+Shift+I"
+		);
+		this.page.add_menu_item(
 			__("Create Quotation"),
 			this.create_quotation_from_pos.bind(this),
 			false,
@@ -321,9 +328,52 @@ erpnext.PointOfSale.Controller = class {
 		dialog.show();
 	}
 
+	open_quotation_dialog() {
+		if (this.settings.frm_doctype !== "Sales Invoice") {
+			frappe.msgprint({
+				title: __("Not Supported"),
+				indicator: "orange",
+				message: __(
+					"This action requires POS invoice type to be Sales Invoice in POS Settings."
+				),
+			});
+			return;
+		}
+
+		const filters = {
+			docstatus: 1,
+			company: this.company,
+		};
+
+		const dialog = new frappe.ui.Dialog({
+			title: __("Create Invoice from Quotation"),
+			fields: [
+				{
+					fieldtype: "Link",
+					label: __("Quotation"),
+					fieldname: "quotation",
+					options: "Quotation",
+					reqd: 1,
+					get_query: () => ({
+						query: "erpnext.selling.page.point_of_sale.point_of_sale.quotation_query",
+						filters,
+					}),
+				},
+			],
+			primary_action_label: __("Load"),
+			primary_action: async ({ quotation }) => {
+				dialog.hide();
+				await this.load_quotation_on_pos(quotation);
+			},
+		});
+
+		dialog.show();
+	}
+
 	async load_sales_order_on_pos(sales_order) {
 		try {
 			frappe.dom.freeze();
+			this.source_quotation = null;
 			await this.make_invoice_frm("Sales Invoice");
 
 			const response = await frappe.call({
@@ -367,6 +417,60 @@ erpnext.PointOfSale.Controller = class {
 				title: __("Unable to load Sales Order"),
 				indicator: "red",
 				message: error?.message || __("Could not create invoice from this Sales Order."),
+			});
+		} finally {
+			frappe.dom.unfreeze();
+		}
+	}
+
+	async load_quotation_on_pos(quotation) {
+		try {
+			frappe.dom.freeze();
+			this.source_quotation = null;
+			await this.make_invoice_frm("Sales Invoice");
+
+			const response = await frappe.call({
+				method: "erpnext.selling.doctype.quotation.quotation.make_sales_invoice",
+				args: {
+					source_name: quotation,
+				},
+			});
+
+			if (!response.message) return;
+
+			frappe.model.sync(response.message);
+			this.frm.refresh(response.message.name);
+			this.frm.doc.__onload = this.frm.doc.__onload || {};
+			this.frm.doc.__onload.load_after_mapping = true;
+			this.frm.doc.is_pos = 1;
+			this.frm.doc.is_created_using_pos = 1;
+			this.frm.doc.pos_profile = this.pos_profile;
+			this.frm.doc.set_warehouse = this.settings.warehouse;
+			await this.set_pos_profile_data();
+			this.source_quotation = quotation;
+
+			const sales_person = this.cart?.si_sales_person_field?.get_value?.() || "";
+			if (sales_person) {
+				(this.frm.doc.items || []).forEach((item) => {
+					if (!item.custom_sales_person) {
+						item.custom_sales_person = sales_person;
+					}
+				});
+			}
+
+			this.cart.load_invoice();
+			this.toggle_recent_order_list(false);
+			this.toggle_components(true);
+
+			frappe.show_alert({
+				indicator: "green",
+				message: __("Quotation {0} loaded into POS invoice", [quotation]),
+			});
+		} catch (error) {
+			frappe.msgprint({
+				title: __("Unable to load Quotation"),
+				indicator: "red",
+				message: error?.message || __("Could not create invoice from this Quotation."),
 			});
 		} finally {
 			frappe.dom.unfreeze();
@@ -666,7 +770,17 @@ erpnext.PointOfSale.Controller = class {
 				},
 
 				submit_invoice: () => {
-					this.frm.savesubmit().then((r) => {
+					this.frm.savesubmit().then(async (r) => {
+						if (this.source_quotation) {
+							await frappe.call({
+								method: "erpnext.selling.page.point_of_sale.point_of_sale.update_quotation_status_from_pos_invoice",
+								args: {
+									quotation: this.source_quotation,
+									sales_invoice: r.doc.name,
+								},
+							});
+							this.source_quotation = null;
+						}
 						this.toggle_components(false);
 						this.toggle_submitted_invoice_summary(true);
 						frappe.show_alert({
