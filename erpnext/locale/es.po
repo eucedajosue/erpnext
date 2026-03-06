@@ -57219,5 +57219,8 @@ msgstr "Artículos más antiguos"
 msgid "Create Invoice from Sales Order"
 msgstr "Crear Factura desde Orden de Venta"
 
+msgid "Create Invoice from Quotation"
+msgstr "Crear Factura desde Cotización"
+
 msgid "Load"
 msgstr "Cargar"
