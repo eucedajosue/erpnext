@@ -666,10 +666,18 @@ erpnext.PointOfSale.ItemCart = class {
 							<div class="customer-name">${customer_name}</div>
 							${get_customer_description()}
 						</div>
-						<div class="reset-customer-btn" data-customer="${escape(customer)}">
-							<svg width="32" height="32" viewBox="0 0 14 14" fill="none">
-								<path d="M4.93764 4.93759L7.00003 6.99998M9.06243 9.06238L7.00003 6.99998M7.00003 6.99998L4.93764 9.06238L9.06243 4.93759" stroke="#8D99A6"/>
-							</svg>
+						<div class="customer-actions">
+							<a href="/app/customer/${customer}" target="_blank" class="edit-customer-btn">
+								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+									<path d="M12 3H7.2C5.51984 3 4.67976 3 4.03803 3.32698C3.47354 3.6146 3.0146 4.07354 2.72698 4.63803C2.4 5.27976 2.4 6.11984 2.4 7.8V16.2C2.4 17.8802 2.4 18.7202 2.72698 19.362C3.0146 19.9265 3.47354 20.3854 4.03803 20.673C4.67976 21 5.51984 21 7.2 21H15.6C17.2802 21 18.1202 21 18.762 20.673C19.3265 20.3854 19.7854 19.9265 20.073 19.362C20.4 18.7202 20.4 17.8802 20.4 16.2V12" stroke="#8D99A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+									<path d="M17.8 2.8C18.8934 1.7066 20.6666 1.7066 21.76 2.8C22.8534 3.8934 22.8534 5.6666 21.76 6.76L11.4 17.12L7.8 18L8.68 14.4L19.04 4.04" stroke="#8D99A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+								</svg>
+							</a>
+							<div class="reset-customer-btn" data-customer="${escape(customer)}">
+								<svg width="32" height="32" viewBox="0 0 14 14" fill="none">
+									<path d="M4.93764 4.93759L7.00003 6.99998M9.06243 9.06238L7.00003 6.99998M7.00003 6.99998L4.93764 9.06238L9.06243 4.93759" stroke="#8D99A6"/>
+								</svg>
+							</div>
 						</div>
 					</div>
 				</div>`

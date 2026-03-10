@@ -1,0 +1,9 @@
+.customer-actions {
+	display: flex;
+	align-items: center;
+}
+
+.edit-customer-btn {
+	margin-right: 10px;
+	cursor: pointer;
+}
