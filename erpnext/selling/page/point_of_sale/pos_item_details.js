@@ -118,9 +118,9 @@ erpnext.PointOfSale.ItemDetails = class {
 	render_dom(item) {
 		let { item_name, description, image, price_list_rate } = item;
 
-		this.$item_name.html(item_name);
+		this.$item_name.text(item_name || "");
 		this.$item_price.html(format_currency(price_list_rate, this.currency));
-		this.$item_description.html("");
+		this.$item_description.text(this.get_safe_description(description));
 
 		if (!this.hide_images && image) {
 			this.$item_image.html(
@@ -165,21 +165,46 @@ erpnext.PointOfSale.ItemDetails = class {
 				this.$form_container.find(`.${fieldname}-control`).css("grid-column", "span 2");
 			}
 
+			if (fieldname === "description") {
+				// Description is easier to edit in POS when it is wide but compact.
+				this.$form_container.find(`.${fieldname}-control`).css("grid-column", "span 2");
+			}
+
 			const field_meta = this.item_meta.fields.find((df) => df.fieldname === fieldname);
-			fieldname === "discount_percentage" ? (field_meta.label = __("Discount (%)")) : "";
+			const control_df = {
+				...field_meta,
+			};
+			if (fieldname === "discount_percentage") {
+				control_df.label = __("Discount (%)");
+			}
+			if (fieldname === "description") {
+				// Keep description as multiline but compact in POS item details.
+				control_df.fieldtype = "Small Text";
+				control_df.options = "";
+			}
 			const me = this;
 
 			this[`${fieldname}_control`] = frappe.ui.form.make_control({
 				df: {
-					...field_meta,
+					...control_df,
 					onchange: function () {
-						me.events.form_updated(me.current_item, fieldname, this.value);
+						let value = this.value;
+						if (fieldname === "description") {
+							value = me.get_safe_description(value);
+							if (value !== this.value) {
+								this.set_value(value);
+							}
+						}
+						me.events.form_updated(me.current_item, fieldname, value);
 					},
 				},
 				parent: this.$form_container.find(`.${fieldname}-control`),
 				render_input: true,
 			});
-			this[`${fieldname}_control`].set_value(item[fieldname]);
+			const initial_value = fieldname === "description"
+				? this.get_safe_description(item[fieldname])
+				: item[fieldname];
+			this[`${fieldname}_control`].set_value(initial_value);
 
 			// Respeta hidden / read_only desde la meta
 			if (field_meta?.read_only) this[`${fieldname}_control`].df.read_only = 1;
@@ -198,6 +223,10 @@ erpnext.PointOfSale.ItemDetails = class {
 					this.events.form_updated(this.current_item, fieldname, doc_sp);
 				}
 			}
+
+			if (fieldname === "description") {
+				this.tune_description_control();
+			}
 		});
 
 		this.resize_serial_control(item);
@@ -206,10 +235,35 @@ erpnext.PointOfSale.ItemDetails = class {
 		this.bind_custom_control_change_event();
 	}
 
+	tune_description_control() {
+		const description_control = this.$form_container.find(".description-control");
+		const apply_compact_styles = () => {
+			const description_field = description_control.find("textarea, input.input-with-feedback");
+			if (!description_field.length) return;
+
+			description_control.find(".control-label").css("margin-bottom", "0.2rem");
+
+			const input = description_field.get(0);
+			input.style.setProperty("height", "4.2rem", "important");
+			input.style.setProperty("min-height", "4.2rem", "important");
+			input.style.setProperty("max-height", "4.2rem", "important");
+			input.style.setProperty("resize", "none", "important");
+			input.style.setProperty("overflow-y", "auto", "important");
+			input.style.setProperty("line-height", "1.25", "important");
+			input.style.setProperty("padding-top", "0.25rem", "important");
+			input.style.setProperty("padding-bottom", "0.25rem", "important");
+			description_field.attr("rows", 3);
+		};
+
+		apply_compact_styles();
+		setTimeout(apply_compact_styles, 0);
+	}
+
 	get_form_fields(item) {
 		const fields = [
 			"qty",
 			"uom",
+			"description",
 			"rate",
 			"conversion_factor",
 			"discount_percentage",
@@ -372,16 +426,23 @@ erpnext.PointOfSale.ItemDetails = class {
 		frappe.model.on(`${frm_doctype} Item`, "*", (fieldname, value, item_row) => {
 			const field_control = this[`${fieldname}_control`];
 			const item_row_is_being_edited = this.compare_with_current_item(item_row);
+			const control_value = fieldname === "description" ? this.get_safe_description(value) : value;
 			if (
 				item_row_is_being_edited &&
 				field_control &&
-				field_control.get_value() !== value &&
+				field_control.get_value() !== control_value &&
 				value == item_row[fieldname]
 			) {
-				field_control.set_value(value);
+				field_control.set_value(control_value);
 				cur_pos.update_cart_html(item_row);
 			}
 		});
+	}
+
+	get_safe_description(value) {
+		if (!value) return "";
+		const plain_text = $("<div>").html(String(value)).text();
+		return plain_text.replace(/\s+$/g, "");
 	}
 
 	async auto_update_batch_no() {

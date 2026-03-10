@@ -979,8 +979,8 @@
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				max-width: 11rem;
-				max-height: 11rem;
+				max-width: 5rem;
+				max-height: 5rem;
 				border-radius: var(--border-radius-md);
 				margin-left: var(--margin-md);
 				color: var(--gray-500);
@@ -997,9 +997,9 @@
 					align-items: center;
 					justify-content: center;
 					border-radius: var(--border-radius-md);
-					font-size: var(--text-3xl);
-					width: 11rem;
-					height: 11rem;
+					font-size: var(--text-base);
+					width: 5rem;
+					height: 5rem;
 				}
 			}
 		}
@@ -1030,6 +1030,36 @@
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 			column-gap: var(--padding-md);
 			row-gap: var(--padding-md);
+
+			> .description-control {
+				grid-column: span 2;
+				margin-bottom: 0 !important;
+
+				.control-label {
+					display: block !important;
+					margin-bottom: 0.15rem !important;
+				}
+
+				.control-input-wrapper {
+					min-height: auto !important;
+					padding: 0 !important;
+				}
+
+				textarea,
+				.input-with-feedback,
+				input {
+					height: 4.2rem !important;
+					min-height: 4.2rem !important;
+					max-height: 4.2rem !important;
+					line-height: 1.25 !important;
+					padding-top: 0.25rem !important;
+					padding-bottom: 0.25rem !important;
+					padding-left: 0.35rem !important;
+					padding-right: 0.35rem !important;
+					resize: none !important;
+					overflow-y: auto !important;
+				}
+			}
 
 			> .auto-fetch-btn {
 				@extend .pointer-no-select;
