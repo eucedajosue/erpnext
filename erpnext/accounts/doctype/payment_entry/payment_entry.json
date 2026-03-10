@@ -142,6 +142,7 @@
    "fieldname": "posting_date",
    "fieldtype": "Datetime",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Posting Date",
    "read_only": 1,
    "reqd": 1
@@ -166,7 +167,6 @@
    "allow_in_quick_entry": 1,
    "fieldname": "mode_of_payment",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Mode of Payment",
    "options": "Mode of Payment",
    "reqd": 1
@@ -236,6 +236,7 @@
    "fieldname": "paid_from",
    "fieldtype": "Link",
    "in_global_search": 1,
+   "in_list_view": 1,
    "label": "Account Paid From",
    "options": "Account",
    "print_hide": 1,
@@ -260,6 +261,7 @@
    "fieldname": "paid_to",
    "fieldtype": "Link",
    "in_global_search": 1,
+   "in_list_view": 1,
    "label": "Account Paid To",
    "options": "Account",
    "print_hide": 1,
@@ -423,6 +425,7 @@
    "depends_on": "eval:(doc.paid_from && doc.paid_to)",
    "fieldname": "reference_no",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Cheque/Reference No",
    "mandatory_depends_on": "eval:(doc.paid_from_account_type == 'Bank' || doc.paid_to_account_type == 'Bank')"
   },
@@ -822,7 +825,7 @@
    "table_fieldname": "payment_entries"
   }
  ],
- "modified": "2026-02-03 16:08:49.800381",
+ "modified": "2026-03-09 17:15:30.453920",
  "modified_by": "Administrator",
  "module": "Accounts",
  "name": "Payment Entry",
