@@ -1174,7 +1174,7 @@ msgstr "Número AWB"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Abampere"
-msgstr "Abamperio"
+msgstr ""
 
 #. Label of the abbr (Data) field in DocType 'Company'
 #: erpnext/setup/doctype/company/company.json
@@ -2203,12 +2203,12 @@ msgstr "Fecha de Adquisición"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Acre"
-msgstr "Acre"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Acre (US)"
-msgstr "Acre (EE. UU.)"
+msgstr ""
 
 #. Label of the action_if_quality_inspection_is_not_submitted (Select) field in
 #. DocType 'Stock Settings'
@@ -4734,27 +4734,27 @@ msgstr "Importes"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Ampere"
-msgstr "Amperio"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Ampere-Hour"
-msgstr "Amperio-Hora"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Ampere-Minute"
-msgstr "Amperio-Minuto"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Ampere-Second"
-msgstr "Amperio-Segundo"
+msgstr ""
 
 #: erpnext/controllers/trends.py:269 erpnext/controllers/trends.py:281
 #: erpnext/controllers/trends.py:290
 msgid "Amt"
-msgstr "Monto"
+msgstr ""
 
 #. Description of a DocType
 #: erpnext/setup/doctype/item_group/item_group.json
@@ -5199,7 +5199,7 @@ msgstr "Comparar de manera aproximada descripciones / nombres de las terceras pa
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Are"
-msgstr "Área"
+msgstr ""
 
 #: erpnext/public/js/utils/demo.js:20
 msgid "Are you sure you want to clear all demo data?"
@@ -5226,7 +5226,7 @@ msgstr ""
 #: erpnext/assets/doctype/location/location.json
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Area"
-msgstr "Zona"
+msgstr ""
 
 #. Label of the area_uom (Link) field in DocType 'Location'
 #: erpnext/assets/doctype/location/location.json
@@ -5240,7 +5240,7 @@ msgstr "Cantidad de llegada"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Arshin"
-msgstr "Arshin"
+msgstr ""
 
 #: erpnext/stock/report/serial_no_ledger/serial_no_ledger.js:57
 #: erpnext/stock/report/stock_ageing/stock_ageing.js:16
@@ -5933,7 +5933,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Atmosphere"
-msgstr "Atmósfera"
+msgstr ""
 
 #: erpnext/public/js/utils/serial_no_batch_selector.js:244
 #: erpnext/stock/doctype/serial_and_batch_bundle/serial_and_batch_bundle.js:73
@@ -7275,17 +7275,17 @@ msgstr "Códigos de Barras"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Barleycorn"
-msgstr "Barleycorn"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Barrel (Oil)"
-msgstr "Barril (Petróleo)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Barrel(Beer)"
-msgstr "Barril(Cerveza)"
+msgstr ""
 
 #. Label of the base_amount (Currency) field in DocType 'BOM Creator Item'
 #: erpnext/manufacturing/doctype/bom_creator_item/bom_creator_item.json
@@ -8153,7 +8153,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Box"
-msgstr "Caja"
+msgstr ""
 
 #. Label of the branch (Link) field in DocType 'SMS Center'
 #. Name of a DocType
@@ -8230,17 +8230,17 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Btu/Hour"
-msgstr "Btu/hora"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Btu/Minutes"
-msgstr "Btu/minutos"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Btu/Seconds"
-msgstr "Btu/segundos"
+msgstr ""
 
 #: erpnext/manufacturing/report/material_requirements_planning_report/material_requirements_planning_report.js:101
 msgid "Bucket Size"
@@ -8551,22 +8551,22 @@ msgstr "Cuenta CWIP"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Caballeria"
-msgstr "Caballería"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cable Length"
-msgstr "Longitud de cable"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cable Length (UK)"
-msgstr "Longitud de cable (UK)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cable Length (US)"
-msgstr "Longitud de cable (US)"
+msgstr ""
 
 #: erpnext/accounts/report/accounts_payable/accounts_payable.js:62
 #: erpnext/accounts/report/accounts_payable_summary/accounts_payable_summary.js:28
@@ -8644,7 +8644,7 @@ msgstr "Calibración"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Calibre"
-msgstr "Calibre"
+msgstr ""
 
 #: erpnext/telephony/doctype/call_log/call_log.js:8
 msgid "Call Again"
@@ -8728,27 +8728,27 @@ msgstr "Devolver Llamada"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Calorie (Food)"
-msgstr "Calorías (Alimentos)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Calorie (It)"
-msgstr "Caloría (It)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Calorie (Mean)"
-msgstr "Calorías (Mean)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Calorie (Th)"
-msgstr "Calorías (Th)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Calorie/Seconds"
-msgstr "Calorías/segundos"
+msgstr ""
 
 #. Name of a report
 #. Label of a Link in the CRM Workspace
@@ -9446,22 +9446,22 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Centiarea"
-msgstr "Centiárea"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Centigram/Litre"
-msgstr "Centigramo/Litro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Centilitre"
-msgstr "Centilitro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Centimeter"
-msgstr "Centímetro"
+msgstr ""
 
 #. Label of the certificate_attachement (Attach) field in DocType 'Asset
 #. Maintenance Log'
@@ -12721,37 +12721,37 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Centimeter"
-msgstr "Centímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Decimeter"
-msgstr "Decímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Foot"
-msgstr "Pie Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Inch"
-msgstr "Pulgada Cúbica"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Meter"
-msgstr "Metro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Millimeter"
-msgstr "Milímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cubic Yard"
-msgstr "Yarda Cúbica"
+msgstr ""
 
 #. Label of the cumulative_threshold (Float) field in DocType 'Tax Withholding
 #. Rate'
@@ -12762,7 +12762,7 @@ msgstr "Umbral de Transacción Acumulativo"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cup"
-msgstr "Taza"
+msgstr ""
 
 #. Label of a Link in the Accounting Workspace
 #. Name of a DocType
@@ -13755,7 +13755,7 @@ msgstr "Número de arancel aduanero"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Cycle/Second"
-msgstr "Ciclo/Segundo"
+msgstr ""
 
 #: erpnext/stock/report/fifo_queue_vs_qty_after_transaction_comparison/fifo_queue_vs_qty_after_transaction_comparison.py:204
 #: erpnext/stock/report/stock_ledger_invariant_check/stock_ledger_invariant_check.py:243
@@ -14156,17 +14156,17 @@ msgstr "DEUDORES VARIOS"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Decigram/Litre"
-msgstr "Decigramo/Litro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Decilitre"
-msgstr "Decilitro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Decimeter"
-msgstr "Decímetro"
+msgstr ""
 
 #: erpnext/public/js/utils/sales_common.js:610
 msgid "Declare Lost"
@@ -14743,7 +14743,7 @@ msgstr "Defina el Tipo de Proyecto."
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Dekagram/Litre"
-msgstr "Decagramo/Litro"
+msgstr ""
 
 #: erpnext/projects/report/delayed_tasks_summary/delayed_tasks_summary.py:130
 msgid "Delay (In Days)"
@@ -16385,7 +16385,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Dram"
-msgstr "Dracma"
+msgstr ""
 
 #. Name of a DocType
 #. Label of the driver (Link) field in DocType 'Delivery Note'
@@ -16613,7 +16613,7 @@ msgstr "Condición Dinámica"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Dyne"
-msgstr "Dina"
+msgstr ""
 
 #: erpnext/regional/italy/utils.py:221 erpnext/regional/italy/utils.py:241
 #: erpnext/regional/italy/utils.py:251 erpnext/regional/italy/utils.py:259
@@ -18167,7 +18167,7 @@ msgstr "Cola FIFO/LIFO"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Fahrenheit"
-msgstr "Fahrenheit"
+msgstr ""
 
 #: erpnext/bulk_transaction/doctype/bulk_transaction_log/bulk_transaction_log.js:17
 msgid "Failed Entries"
@@ -18237,7 +18237,7 @@ msgstr "Antecedentes familiares"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Faraday"
-msgstr "Faraday"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -18913,12 +18913,12 @@ msgstr "Nombre del Piso"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Fluid Ounce (UK)"
-msgstr "Onza líquida (UK)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Fluid Ounce (US)"
-msgstr "Onza líquida (US)"
+msgstr ""
 
 #: erpnext/selling/page/point_of_sale/pos_item_selector.js:334
 msgid "Focus on Item Group filter"
@@ -18958,17 +18958,17 @@ msgstr "Pie"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Foot Of Water"
-msgstr "Pie de Agua"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Foot/Minute"
-msgstr "Pie/Minuto"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Foot/Second"
-msgstr "Pie/Segundo"
+msgstr ""
 
 #: erpnext/accounts/print_format/payment_receipt_voucher/payment_receipt_voucher.html:23
 msgid "For"
@@ -19635,7 +19635,7 @@ msgstr "Tipo de Combustible"
 #. Label of the uom (Link) field in DocType 'Vehicle'
 #: erpnext/setup/doctype/vehicle/vehicle.json
 msgid "Fuel UOM"
-msgstr "UOM de Combustible"
+msgstr ""
 
 #. Option for the 'Fulfilment Status' (Select) field in DocType 'Contract'
 #. Label of the fulfilled (Check) field in DocType 'Contract Fulfilment
@@ -19848,22 +19848,22 @@ msgstr "Ganancia/Pérdida por enajenación de activos fijos"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gallon (UK)"
-msgstr "Galón (UK)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gallon Dry (US)"
-msgstr "Galón Seco (US)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gallon Liquid (US)"
-msgstr "Galón Líquido (US)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gamma"
-msgstr "Gama"
+msgstr ""
 
 #: erpnext/projects/doctype/project/project.js:102
 msgid "Gantt Chart"
@@ -20295,27 +20295,27 @@ msgstr "Graduado"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Grain"
-msgstr "Granos"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Grain/Cubic Foot"
-msgstr "Grano/Pie Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Grain/Gallon (UK)"
-msgstr "Grano/Galón (UK)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Grain/Gallon (US)"
-msgstr "Grano/Galón (US)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gram"
-msgstr "Gramo"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -20325,22 +20325,22 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gram/Cubic Centimeter"
-msgstr "Gramo/Centímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gram/Cubic Meter"
-msgstr "Gramo/Metro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gram/Cubic Millimeter"
-msgstr "Gramo/Milímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Gram/Litre"
-msgstr "Gramo/Litro"
+msgstr ""
 
 #. Label of the grand_total (Currency) field in DocType 'Dunning'
 #. Label of the total_amount (Float) field in DocType 'Payment Entry Reference'
@@ -20657,7 +20657,7 @@ msgstr "Semestral"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hand"
-msgstr "Mano"
+msgstr ""
 
 #: erpnext/accounts/report/accounts_payable/accounts_payable.js:150
 msgid "Handle Employee Advances"
@@ -20806,29 +20806,29 @@ msgstr "Detalles de salud"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hectare"
-msgstr "Hectárea"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hectogram/Litre"
-msgstr "Hectogramo/Litro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hectometer"
-msgstr "Hectómetro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hectopascal"
-msgstr "Hectopascal"
+msgstr ""
 
 #. Label of the height (Int) field in DocType 'Shipment Parcel'
 #. Label of the height (Int) field in DocType 'Shipment Parcel Template'
 #: erpnext/stock/doctype/shipment_parcel/shipment_parcel.json
 #: erpnext/stock/doctype/shipment_parcel_template/shipment_parcel_template.json
 msgid "Height (cm)"
-msgstr "Altura (cm)"
+msgstr ""
 
 #: erpnext/templates/pages/search_help.py:14
 msgid "Help Results for"
@@ -20880,7 +20880,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hertz"
-msgstr "Hertz"
+msgstr ""
 
 #: erpnext/stock/doctype/repost_item_valuation/repost_item_valuation.py:518
 msgid "Hi,"
@@ -21012,7 +21012,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Horsepower"
-msgstr "Caballos de fuerza"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -21022,7 +21022,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hour"
-msgstr "Hora"
+msgstr ""
 
 #. Label of the hour_rate (Currency) field in DocType 'BOM Operation'
 #. Label of the hour_rate (Currency) field in DocType 'Job Card'
@@ -21038,11 +21038,11 @@ msgstr ""
 #: erpnext/projects/report/daily_timesheet_summary/daily_timesheet_summary.py:31
 #: erpnext/templates/pages/timelog_info.html:37
 msgid "Hours"
-msgstr "Horas"
+msgstr ""
 
 #: erpnext/templates/pages/projects.html:26
 msgid "Hours Spent"
-msgstr "Horas Dedicadas"
+msgstr ""
 
 #: erpnext/accounts/doctype/pricing_rule/pricing_rule.js:44
 msgid "How Pricing Rule is applied?"
@@ -21089,12 +21089,12 @@ msgstr "Recursos Humanos"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hundredweight (UK)"
-msgstr "Quintal  (UK)"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Hundredweight (US)"
-msgstr "Quintal (EE.UU.)"
+msgstr ""
 
 #: erpnext/stock/report/stock_ledger_invariant_check/stock_ledger_invariant_check.py:283
 #: erpnext/stock/report/stock_ledger_variance/stock_ledger_variance.py:186
@@ -21145,7 +21145,7 @@ msgstr "ISSN"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Iches Of Water"
-msgstr "Pulgada de columna de agua"
+msgstr ""
 
 #: erpnext/manufacturing/report/job_card_summary/job_card_summary.py:128
 #: erpnext/manufacturing/report/quality_inspection_summary/quality_inspection_summary.py:69
@@ -21982,7 +21982,7 @@ msgstr "Incentivos"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Inch"
-msgstr "Pulgada"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -21992,17 +21992,17 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Inch/Minute"
-msgstr "Pulgada/Minuto"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Inch/Second"
-msgstr "Pulgada/Segundo"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Inches Of Mercury"
-msgstr "Pulgadas de Mercurio"
+msgstr ""
 
 #: erpnext/accounts/report/payment_ledger/payment_ledger.js:77
 msgid "Include Account Currency"
@@ -25613,12 +25613,12 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Joule"
-msgstr "Joule"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Joule/Meter"
-msgstr "Joule/Metro"
+msgstr ""
 
 #: erpnext/accounts/doctype/exchange_rate_revaluation/exchange_rate_revaluation.js:30
 msgid "Journal Entries"
@@ -25717,7 +25717,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kelvin"
-msgstr "Kelvin"
+msgstr ""
 
 #. Label of a Card Break in the Buying Workspace
 #. Label of a Card Break in the Selling Workspace
@@ -25731,17 +25731,17 @@ msgstr "Reportes clave"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kg"
-msgstr "Kg"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kiloampere"
-msgstr "Kiloamperio"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilocalorie"
-msgstr "Kilocaloría"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -25761,37 +25761,37 @@ msgstr "Kilogramo/Centímetro Cúbico"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilogram/Cubic Meter"
-msgstr "Kilogramo/Metro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilogram/Litre"
-msgstr "Kilogramo/Litro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilohertz"
-msgstr "Kilohertz"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilojoule"
-msgstr "Kilojoule"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilometer"
-msgstr "Kilómetro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilometer/Hour"
-msgstr "Kilómetro/Hora"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilopascal"
-msgstr "Kilopascal"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -25806,12 +25806,12 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilowatt"
-msgstr "Kilowatt"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Kilowatt-Hour"
-msgstr "Kilowatt-Hora"
+msgstr ""
 
 #: erpnext/manufacturing/doctype/job_card/job_card.py:879
 msgid "Kindly cancel the Manufacturing Entries first against the work order {0}."
@@ -28051,22 +28051,22 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Megagram/Litre"
-msgstr "Megagramo/Litro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Megahertz"
-msgstr "Megahertz"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Megajoule"
-msgstr "Megajulio"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Megawatt"
-msgstr "Megavatio"
+msgstr ""
 
 #: erpnext/stock/stock_ledger.py:2046
 msgid "Mention Valuation Rate in the Item master."
@@ -28162,7 +28162,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Meter"
-msgstr "Metro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -28172,7 +28172,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Meter/Second"
-msgstr "Metro/Segundo"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -28247,22 +28247,22 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Milligram"
-msgstr "Miligramo"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Milligram/Cubic Centimeter"
-msgstr "Miligramo/Centímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Milligram/Cubic Meter"
-msgstr "Miligramo/Metro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Milligram/Cubic Millimeter"
-msgstr "Miligramo/Milímetro Cúbico"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -28297,7 +28297,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Millisecond"
-msgstr "Milisegundo"
+msgstr ""
 
 #. Label of the min_amount (Currency) field in DocType 'Promotional Scheme
 #. Price Discount'
@@ -28418,12 +28418,12 @@ msgstr "La cantidad mínima debe ser según Stock UOM"
 #: erpnext/quality_management/doctype/quality_meeting_minutes/quality_meeting_minutes.json
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Minute"
-msgstr "Minuto"
+msgstr ""
 
 #. Label of the minutes (Table) field in DocType 'Quality Meeting'
 #: erpnext/quality_management/doctype/quality_meeting/quality_meeting.json
 msgid "Minutes"
-msgstr "Minutos"
+msgstr ""
 
 #: erpnext/accounts/doctype/account/chart_of_accounts/verified/standard_chart_of_accounts.py:116
 #: erpnext/accounts/doctype/account/chart_of_accounts/verified/standard_chart_of_accounts_with_account_number.py:224
@@ -28864,7 +28864,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Nanogram/Litre"
-msgstr "Nanogramo/Litro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -28874,17 +28874,17 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Nanometer"
-msgstr "Nanómetro"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Nanosecond"
-msgstr "Nanosegundo"
+msgstr ""
 
 #. Option for the 'Fuel Type' (Select) field in DocType 'Vehicle'
 #: erpnext/setup/doctype/vehicle/vehicle.json
 msgid "Natural Gas"
-msgstr "Gas natural"
+msgstr ""
 
 #: erpnext/setup/setup_wizard/data/sales_stage.txt:3
 #: erpnext/setup/setup_wizard/operations/install_fixtures.py:434
@@ -29403,7 +29403,7 @@ msgstr "Editores de periódicos"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Newton"
-msgstr "Newton"
+msgstr ""
 
 #. Label of the next_depreciation_date (Date) field in DocType 'Asset'
 #: erpnext/assets/doctype/asset/asset.json
@@ -29854,7 +29854,7 @@ msgstr "Ninguno de los productos tiene cambios en el valor o en la existencias."
 #: erpnext/setup/setup_wizard/data/uom_data.json erpnext/stock/utils.py:711
 #: erpnext/stock/utils.py:713
 msgid "Nos"
-msgstr "Nos."
+msgstr ""
 
 #. Option for the 'Delivery Status' (Select) field in DocType 'Sales Order'
 #. Option for the 'Based On' (Select) field in DocType 'Authorization Rule'
@@ -32075,7 +32075,7 @@ msgstr ""
 #. Label of the pallets (Select) field in DocType 'Shipment'
 #: erpnext/stock/doctype/shipment/shipment.json
 msgid "Pallets"
-msgstr "Palés"
+msgstr ""
 
 #. Label of the parameter_group (Link) field in DocType 'Item Quality
 #. Inspection Parameter'
@@ -50219,7 +50219,7 @@ msgstr "Ventas por territorio"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Tesla"
-msgstr "Tesla"
+msgstr ""
 
 #. Description of the 'Display Name' (Data) field in DocType 'Financial Report
 #. Row'
@@ -51529,7 +51529,7 @@ msgstr ""
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Tonne"
-msgstr "Tonelada"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
@@ -53185,7 +53185,7 @@ msgstr "Incumplido"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Unit"
-msgstr "Unidad"
+msgstr ""
 
 #: erpnext/controllers/accounts_controller.py:4041
 msgid "Unit Price"
@@ -55160,7 +55160,7 @@ msgstr "Período de garantía (en días)"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Watt"
-msgstr "Watt"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
