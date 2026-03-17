@@ -460,7 +460,8 @@ def get_pos_cash_movements(pos_profile, period_start, period_end):
 			"name",
 			"posting_date",
 			"mode_of_payment",
-			"paid_amount"
+			"paid_amount",
+			"custom_motivo",
 		]
 	)
 	return payments

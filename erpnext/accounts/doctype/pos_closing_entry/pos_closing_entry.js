@@ -150,7 +150,8 @@ frappe.ui.form.on("POS Closing Entry", {
 							payment_entry: entry.name,
 							date: entry.posting_date,
 							mode_of_payment: entry.mode_of_payment,
-							amount: entry.paid_amount
+							amount: entry.paid_amount,
+							motivo: entry.custom_motivo
 						});
 						// Restar el pago de caja de la forma de pago correspondiente
 						const payment_row = frm.doc.payment_reconciliation.find(

@@ -17,6 +17,7 @@ class POSPaymentEntry(Document):
 		amount: DF.Currency
 		date: DF.Datetime | None
 		mode_of_payment: DF.Link | None
+		motivo: DF.Data | None
 		parent: DF.Data
 		parentfield: DF.Data
 		parenttype: DF.Data
