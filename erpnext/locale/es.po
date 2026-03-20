@@ -57224,3 +57224,7 @@ msgstr "Crear Factura desde Cotización"
 
 msgid "Load"
 msgstr "Cargar"
+
+msgid "Exact"
+msgstr "Exacto"
+
