@@ -183,6 +183,10 @@
 								<br>
 							{% } %}
 							{%= data[i]["voucher_no"] %}
+							{% if(report.report_name === "Accounts Receivable" && data[i]["custom_numero_factura"]) { %}
+								<br>
+								{%= __("Numero Factura") %}: {%= data[i]["custom_numero_factura"] %}
+							{% } %}
 						</td>
 
 						{% if(report.report_name === "Accounts Receivable" && filters.show_sales_person) { %}

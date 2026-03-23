@@ -544,7 +544,7 @@ class ReceivablePayableReport:
 					"company": self.filters.company,
 					"docstatus": 1,
 				},
-				fields=["name", "due_date", "po_no"],
+				fields=["name", "due_date", "po_no", "custom_numero_factura"],
 			)
 			for d in si_list:
 				self.invoice_details.setdefault(d.name, d)
@@ -1229,15 +1229,7 @@ class ReceivablePayableReport:
 			)
 
 		if self.account_type == "Receivable":
-			self.add_column(
-				_("Customer Contact"),
-				fieldname="customer_primary_contact",
-				fieldtype="Link",
-				options="Contact",
-			)
-
-		self.add_column(label=_("Cost Center"), fieldname="cost_center", fieldtype="Data")
-		self.add_column(label=_("Voucher Type"), fieldname="voucher_type", fieldtype="Data")
+			self.add_column(label=_("Voucher Type"), fieldname="voucher_type", fieldtype="Data")
 		self.add_column(
 			label=_("Voucher No"),
 			fieldname="voucher_no",
@@ -1245,6 +1237,13 @@ class ReceivablePayableReport:
 			options="voucher_type",
 			width=180,
 		)
+		if self.account_type == "Receivable":
+			self.add_column(
+				label=_("Numero Factura"),
+				fieldname="custom_numero_factura",
+				fieldtype="Data",
+				width=190,
+			)
 
 		self.add_column(label=_("Due Date"), fieldname="due_date", fieldtype="Date")
 
