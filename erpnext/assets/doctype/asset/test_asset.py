@@ -3,7 +3,6 @@
 import unittest
 
 import frappe
-from frappe.tests import IntegrationTestCase
 from frappe.utils import (
 	add_days,
 	add_months,
@@ -37,21 +36,14 @@ from erpnext.stock.doctype.purchase_receipt.purchase_receipt import (
 	make_purchase_invoice as make_invoice,
 )
 from erpnext.stock.doctype.purchase_receipt.test_purchase_receipt import make_purchase_receipt
+from erpnext.tests.utils import ERPNextTestSuite
 
 
-class AssetSetup(IntegrationTestCase):
-	@classmethod
-	def setUpClass(cls):
-		super().setUpClass()
+class AssetSetup(ERPNextTestSuite):
+	def setUp(self):
 		set_depreciation_settings_in_company()
-		create_asset_data()
 		enable_cwip_accounting("Computers")
 		make_purchase_receipt(item_code="Macbook Pro", qty=1, rate=100000.0, location="Test Location")
-		frappe.db.sql("delete from `tabTax Rule`")
-
-	@classmethod
-	def tearDownClass(cls):
-		frappe.db.rollback()
 
 
 class TestAsset(AssetSetup):
@@ -826,6 +818,9 @@ class TestAsset(AssetSetup):
 
 
 class TestDepreciationMethods(AssetSetup):
+	def setUp(self):
+		frappe.db.set_single_value("System Settings", "float_precision", 2)
+
 	def test_schedule_for_straight_line_method(self):
 		asset = create_asset(
 			calculate_depreciation=1,
@@ -923,9 +918,9 @@ class TestDepreciationMethods(AssetSetup):
 		self.assertEqual(asset.status, "Draft")
 
 		expected_schedules = [
-			["2030-12-31", 66667.00, 66667.00],
-			["2031-12-31", 22222.11, 88889.11],
-			["2032-12-31", 1110.89, 90000.0],
+			["2030-12-31", 66670.0, 66670.0],
+			["2031-12-31", 22221.11, 88891.11],
+			["2032-12-31", 1108.89, 90000.0],
 		]
 
 		schedules = [
@@ -951,7 +946,7 @@ class TestDepreciationMethods(AssetSetup):
 
 		self.assertEqual(asset.status, "Draft")
 
-		expected_schedules = [["2031-12-31", 33333.50, 83333.50], ["2032-12-31", 6666.50, 90000.0]]
+		expected_schedules = [["2031-12-31", 33335.0, 83335.0], ["2032-12-31", 6665.0, 90000.0]]
 
 		schedules = [
 			[cstr(d.schedule_date), d.depreciation_amount, d.accumulated_depreciation_amount]
@@ -1069,12 +1064,12 @@ class TestDepreciationMethods(AssetSetup):
 		)
 
 		expected_schedules = [
-			["2022-02-28", 337.72, 337.72],
-			["2022-03-31", 675.45, 1013.17],
-			["2022-04-30", 675.45, 1688.62],
-			["2022-05-31", 675.45, 2364.07],
-			["2022-06-30", 675.45, 3039.52],
-			["2022-07-15", 1960.48, 5000.0],
+			["2022-02-28", 337.71, 337.71],
+			["2022-03-31", 675.42, 1013.13],
+			["2022-04-30", 675.42, 1688.55],
+			["2022-05-31", 675.42, 2363.97],
+			["2022-06-30", 675.42, 3039.39],
+			["2022-07-15", 1960.61, 5000.0],
 		]
 
 		schedules = [
@@ -1894,30 +1889,8 @@ def get_gl_entries(doctype, docname):
 	)
 
 
-def create_asset_data():
-	if not frappe.db.exists("Asset Category", "Computers"):
-		create_asset_category()
-
-	if not frappe.db.exists("Item", "Macbook Pro"):
-		create_fixed_asset_item()
-
-	if not frappe.db.exists("Location", "Test Location"):
-		frappe.get_doc({"doctype": "Location", "location_name": "Test Location"}).insert()
-
-	if not frappe.db.exists("Finance Book", "Test Finance Book 1"):
-		frappe.get_doc({"doctype": "Finance Book", "finance_book_name": "Test Finance Book 1"}).insert()
-
-	if not frappe.db.exists("Finance Book", "Test Finance Book 2"):
-		frappe.get_doc({"doctype": "Finance Book", "finance_book_name": "Test Finance Book 2"}).insert()
-
-	if not frappe.db.exists("Finance Book", "Test Finance Book 3"):
-		frappe.get_doc({"doctype": "Finance Book", "finance_book_name": "Test Finance Book 3"}).insert()
-
-
 def create_asset(**args):
 	args = frappe._dict(args)
-
-	create_asset_data()
 
 	asset = frappe.get_doc(
 		{
