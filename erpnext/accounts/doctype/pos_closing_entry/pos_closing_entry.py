@@ -451,7 +451,7 @@ def get_pos_cash_movements(pos_profile, period_start, period_end):
 		filters={
 			"docstatus": 1,
 			"is_pos_cash_movement": 1,
-			"payment_type": "Pay",
+			"payment_type": ["in", ["Pay", "Receive"]],
 			"pos_profile": pos_profile,
 			"posting_date": ["between", [period_start, period_end]],
 			"pos_closing_entry": ["is", "not set"]
@@ -460,7 +460,9 @@ def get_pos_cash_movements(pos_profile, period_start, period_end):
 			"name",
 			"posting_date",
 			"mode_of_payment",
+			"payment_type",
 			"paid_amount",
+			"received_amount",
 			"custom_motivo",
 		]
 	)

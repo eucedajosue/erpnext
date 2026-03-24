@@ -144,28 +144,37 @@ frappe.ui.form.on("POS Closing Entry", {
 			callback: (r) => {
 				// Limpiar la tabla antes de agregar
 				frm.set_value("pos_payment_entries", []);
+				frm.set_value("pos_received_payment_entries", []);
 				if (r.message && Array.isArray(r.message)) {
-					r.message.forEach(entry => {
-						frm.add_child("pos_payment_entries", {
+					r.message.forEach((entry) => {
+						const is_receive = entry.payment_type === "Receive";
+						const movement_amount = is_receive ? flt(entry.received_amount) : flt(entry.paid_amount);
+						const expected_delta = is_receive ? movement_amount : -movement_amount;
+
+						const target_table = is_receive
+							? "pos_received_payment_entries"
+							: "pos_payment_entries";
+
+						frm.add_child(target_table, {
 							payment_entry: entry.name,
 							date: entry.posting_date,
 							mode_of_payment: entry.mode_of_payment,
-							amount: entry.paid_amount,
+							amount: movement_amount,
 							motivo: entry.custom_motivo
 						});
-						// Restar el pago de caja de la forma de pago correspondiente
+						// Pay reduce expected cash, Receive increases it.
 						const payment_row = frm.doc.payment_reconciliation.find(
 							(pay) => pay.mode_of_payment === entry.mode_of_payment
 						);
 						if (payment_row) {
-							payment_row.expected_amount -= flt(entry.paid_amount);
+							payment_row.expected_amount += expected_delta;
 							payment_row.closing_amount = payment_row.expected_amount;
 							payment_row.difference = payment_row.closing_amount - payment_row.expected_amount;
 						} else {
 							frm.add_child("payment_reconciliation", {
 								mode_of_payment: entry.mode_of_payment,
 								opening_amount: 0,
-								expected_amount: -flt(entry.paid_amount),
+								expected_amount: expected_delta,
 								closing_amount: 0,
 								difference: 0
 							});
@@ -173,6 +182,7 @@ frappe.ui.form.on("POS Closing Entry", {
 					});
 				}
 				frm.refresh_field("pos_payment_entries");
+				frm.refresh_field("pos_received_payment_entries");
 				frm.refresh_field("payment_reconciliation");
 			},
 		});
@@ -252,6 +262,8 @@ function reset_values(frm) {
 	frm.set_value("pos_invoices", []);
 	frm.set_value("sales_invoices", []);
 	frm.set_value("sales_invoices_outstanding", []);
+	frm.set_value("pos_payment_entries", []);
+	frm.set_value("pos_received_payment_entries", []);
 	frm.set_value("payment_reconciliation", []);
 	frm.set_value("taxes", []);
 	frm.set_value("grand_total", 0);
@@ -264,6 +276,8 @@ function refresh_fields(frm) {
 	frm.refresh_field("pos_invoices");
 	frm.refresh_field("sales_invoices");
 	frm.refresh_field("sales_invoices_outstanding");
+	frm.refresh_field("pos_payment_entries");
+	frm.refresh_field("pos_received_payment_entries");
 	frm.refresh_field("payment_reconciliation");
 	frm.refresh_field("taxes");
 	frm.refresh_field("grand_total");

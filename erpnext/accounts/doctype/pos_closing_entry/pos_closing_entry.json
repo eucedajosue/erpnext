@@ -24,6 +24,7 @@
   "sales_invoices",
   "sales_invoices_outstanding",
   "pos_payment_entries",
+  "pos_received_payment_entries",
   "taxes_and_charges_section",
   "taxes",
   "section_break_13",
@@ -258,6 +259,13 @@
    "fieldname": "pos_payment_entries",
    "fieldtype": "Table",
    "label": "POS Payment Entries",
+   "options": "POS Payment Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pos_received_payment_entries",
+   "fieldtype": "Table",
+   "label": "POS Received Payment Entries",
    "options": "POS Payment Entry",
    "read_only": 1
   },
