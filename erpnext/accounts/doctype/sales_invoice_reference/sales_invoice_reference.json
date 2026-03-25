@@ -11,6 +11,7 @@
   "column_break_fear",
   "customer",
   "grand_total",
+  "payment_details",
   "is_return",
   "return_against"
  ],
@@ -66,6 +67,13 @@
    "in_list_view": 1,
    "label": "Amount",
    "reqd": 1
+  },
+  {
+   "fieldname": "payment_details",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Payment Details",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

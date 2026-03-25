@@ -211,6 +211,7 @@ function add_to_transaction(d, frm) {
 	frm.add_child(field, {
 		posting_date: d.posting_date,
 		grand_total: d.grand_total,
+		payment_details: d.payment_details,
 		customer: d.customer,
 		is_return: d.is_return,
 		return_against: d.return_against,

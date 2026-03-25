@@ -271,10 +271,43 @@ def get_invoices(start, end, pos_profile, user):
 
 	query = query.orderby(query.timestamp)
 	invoices = query.run(as_dict=1)
+	payment_details_by_invoice = get_invoice_payment_details(invoices)
+
+	for invoice in invoices:
+		invoice.payment_details = payment_details_by_invoice.get(invoice.name, "")
 
 	data = {"invoices": invoices, "payments": get_payments(invoices), "taxes": get_taxes(invoices)}
 
 	return data
+
+
+def get_invoice_payment_details(invoices):
+	if not invoices:
+		return {}
+
+	invoices_name = [d.name for d in invoices]
+
+	SalesInvoicePayment = DocType("Sales Invoice Payment")
+	rows = (
+		frappe.qb.from_(SalesInvoicePayment)
+		.where(
+			(SalesInvoicePayment.parenttype.isin(["Sales Invoice", "POS Invoice"]))
+			& (SalesInvoicePayment.parent.isin(invoices_name))
+		)
+		.groupby(SalesInvoicePayment.parent, SalesInvoicePayment.mode_of_payment)
+		.select(
+			SalesInvoicePayment.parent,
+			SalesInvoicePayment.mode_of_payment,
+			fn.Sum(SalesInvoicePayment.amount).as_("amount"),
+		)
+	).run(as_dict=1)
+
+	by_invoice = {}
+	for row in rows:
+		detail = f"{row.mode_of_payment}: {flt(row.amount):,.2f}"
+		by_invoice.setdefault(row.parent, []).append(detail)
+
+	return {invoice: " | ".join(details) for invoice, details in by_invoice.items()}
 
 def get_payments(invoices):
 	if not len(invoices):
@@ -377,6 +410,7 @@ def make_closing_entry_from_opening(opening_entry):
 				invoice: d.name,
 				"posting_date": d.posting_date,
 				"grand_total": d.grand_total,
+				"payment_details": d.payment_details,
 				"customer": d.customer,
 				"is_return": d.is_return,
 				"return_against": d.return_against,
