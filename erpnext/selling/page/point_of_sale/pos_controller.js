@@ -1162,6 +1162,18 @@ erpnext.PointOfSale.Controller = class {
 
 		if (!(available_qty > 0)) {
 			if (is_stock_item) {
+				const alternative_item = await this.get_alternative_item_for_unavailable_stock(
+					item_row.item_code,
+					warehouse,
+					qty_needed
+				);
+
+				if (alternative_item) {
+					await frappe.model.set_value(item_row.doctype, item_row.name, "item_code", alternative_item);
+					await this.trigger_new_item_events(item_row);
+					return;
+				}
+
 				frappe.model.clear_doc(item_row.doctype, item_row.name);
 				frappe.throw({
 					title: __("Not Available"),
@@ -1184,6 +1196,93 @@ erpnext.PointOfSale.Controller = class {
 			frappe.utils.play_sound("error");
 		}
 		frappe.dom.freeze();
+	}
+
+	async get_alternative_item_for_unavailable_stock(item_code, warehouse, qty_needed) {
+		const alt_resp = await frappe.call({
+			method: "cm_app.api.alternative_items.get_alternative_items_for_item",
+			args: {
+				item_code: item_code,
+				txt: "",
+				start: 0,
+				page_len: 20,
+			},
+		});
+
+		const alternatives = (alt_resp.message || []).filter(Boolean);
+		if (!alternatives.length) {
+			return null;
+		}
+
+		const options = [];
+		for (const alt of alternatives) {
+			const stock = (await this.get_available_stock(alt, warehouse)).message || [];
+			options.push({
+				item_code: alt,
+				available_qty: flt(stock[0] || 0),
+			});
+		}
+
+		options.sort((a, b) => {
+			const a_ok = a.available_qty >= flt(qty_needed || 0) ? 1 : 0;
+			const b_ok = b.available_qty >= flt(qty_needed || 0) ? 1 : 0;
+			if (a_ok !== b_ok) {
+				return b_ok - a_ok;
+			}
+			return b.available_qty - a.available_qty;
+		});
+
+		return new Promise((resolve) => {
+			let resolved = false;
+			const dialog = new frappe.ui.Dialog({
+				title: __("Stock insuficiente: seleccionar item alternativo"),
+				fields: [
+					{
+						fieldtype: "HTML",
+						fieldname: "help",
+					},
+					{
+						fieldtype: "Select",
+						fieldname: "alternative_item",
+						label: __("Item alternativo"),
+						options: options.map((d) => d.item_code).join("\n"),
+						default: options[0]?.item_code,
+						reqd: 1,
+					},
+				],
+				primary_action_label: __("Reemplazar item"),
+				primary_action: () => {
+					const values = dialog.get_values() || {};
+					resolved = true;
+					dialog.hide();
+					resolve(values.alternative_item || null);
+				},
+			});
+
+			dialog.fields_dict.help.$wrapper.html(
+				`<p class="small text-muted">
+					${__("El item {0} no tiene stock en {1}. Selecciona un alternativo.", [
+						frappe.utils.escape_html(item_code),
+						frappe.utils.escape_html(warehouse || ""),
+					])}
+				</p>
+				<ul class="small text-muted" style="margin-top: 8px;">
+					${options
+						.map(
+							(d) => `<li>${frappe.utils.escape_html(d.item_code)}: ${flt(d.available_qty)}</li>`
+						)
+						.join("")}
+				</ul>`
+			);
+
+			dialog.$wrapper.on("hidden.bs.modal", () => {
+				if (!resolved) {
+					resolve(null);
+				}
+			});
+
+			dialog.show();
+		});
 	}
 
 	async check_serial_no_availablilty(item_code, warehouse, serial_no) {

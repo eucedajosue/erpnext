@@ -343,7 +343,7 @@ erpnext.PointOfSale.ItemDetails = class {
 			this.warehouse_control.df.reqd = 1;
 			this.warehouse_control.df.onchange = function () {
 				if (this.value) {
-					me.events.form_updated(me.current_item, "warehouse", this.value).then(() => {
+					me.events.form_updated(me.current_item, "warehouse", this.value).then(async () => {
 						me.item_stock_map = me.events.get_item_stock_map();
 						
 						const available_qty = me.item_stock_map[me.item_row.item_code][this.value][0];
@@ -356,6 +356,19 @@ erpnext.PointOfSale.ItemDetails = class {
 								me.warehouse_control.set_value(this.value);
 							});
 						} else if (available_qty === 0 && is_stock_item) {
+							const qty_needed = flt(me.qty_control?.get_value() || me.current_item?.qty || 1);
+							const alternative_item = await me.events.get_alternative_item_for_unavailable_stock(
+								me.item_row.item_code,
+								this.value,
+								qty_needed
+							);
+
+							if (alternative_item) {
+								await frappe.model.set_value(me.doctype, me.name, "item_code", alternative_item);
+								await me.events.trigger_new_item_events(me.item_row);
+								return;
+							}
+
 							me.warehouse_control.set_value("");
 							const bold_item_code = me.item_row.item_code.bold();
 							const bold_warehouse = this.value.bold();
