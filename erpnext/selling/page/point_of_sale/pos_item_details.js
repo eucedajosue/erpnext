@@ -350,12 +350,15 @@ erpnext.PointOfSale.ItemDetails = class {
 						const is_stock_item = Boolean(
 							me.item_stock_map[me.item_row.item_code][this.value][1]
 						);
+						const is_negative_stock_allowed = Boolean(
+							me.item_stock_map[me.item_row.item_code][this.value][2]
+						);
 						if (available_qty === undefined) {
 							me.events.get_available_stock(me.item_row.item_code, this.value).then(() => {
 								// item stock map is updated now reset warehouse
 								me.warehouse_control.set_value(this.value);
 							});
-						} else if (available_qty === 0 && is_stock_item) {
+						} else if (available_qty === 0 && is_stock_item && !is_negative_stock_allowed) {
 							const qty_needed = flt(me.qty_control?.get_value() || me.current_item?.qty || 1);
 							const alternative_item = await me.events.get_alternative_item_for_unavailable_stock(
 								me.item_row.item_code,

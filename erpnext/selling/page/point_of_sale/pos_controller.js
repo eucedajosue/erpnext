@@ -1232,6 +1232,12 @@ erpnext.PointOfSale.Controller = class {
 			return b.available_qty - a.available_qty;
 		});
 
+		const required_qty = flt(qty_needed || 0);
+		const viable_options = options.filter((d) => flt(d.available_qty) >= required_qty);
+		if (!viable_options.length) {
+			return null;
+		}
+
 		return new Promise((resolve) => {
 			let resolved = false;
 			const dialog = new frappe.ui.Dialog({
@@ -1245,8 +1251,8 @@ erpnext.PointOfSale.Controller = class {
 						fieldtype: "Select",
 						fieldname: "alternative_item",
 						label: __("Item alternativo"),
-						options: options.map((d) => d.item_code).join("\n"),
-						default: options[0]?.item_code,
+						options: viable_options.map((d) => d.item_code).join("\n"),
+						default: viable_options[0]?.item_code,
 						reqd: 1,
 					},
 				],
@@ -1267,7 +1273,7 @@ erpnext.PointOfSale.Controller = class {
 					])}
 				</p>
 				<ul class="small text-muted" style="margin-top: 8px;">
-					${options
+					${viable_options
 						.map(
 							(d) => `<li>${frappe.utils.escape_html(d.item_code)}: ${flt(d.available_qty)}</li>`
 						)
