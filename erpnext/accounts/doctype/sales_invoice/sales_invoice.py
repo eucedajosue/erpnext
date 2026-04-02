@@ -703,7 +703,8 @@ class SalesInvoice(SellingController):
 				validate_against_credit_limit = True
 				break
 		if validate_against_credit_limit:
-			if flt(self.paid_amount) < flt(self.grand_total):
+			invoice_total = flt(self.rounded_total) or flt(self.grand_total)
+			if flt(self.paid_amount) < invoice_total:
 				if not get_credit_limit(self.customer, self.company):
 					frappe.throw(_("Credit limit not set for customer {0}").format(self.customer))
 

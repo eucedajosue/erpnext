@@ -544,6 +544,19 @@ erpnext.PointOfSale.Controller = class {
 		this.page.clear_icons();
 		this.page.set_primary_action(__("New Invoice"), this.new_invoice_event.bind(this));
 		this.page.set_secondary_action(__("Recent Orders"), this.toggle_recent_order.bind(this));
+
+		if (this.settings.custom_restaurant) {
+			const save_btn = this.page.add_inner_button(__("Guardar Pedido"), () => {});
+			const recover_btn = this.page.add_inner_button(__("Recuperar Pedido"), () => {});
+
+			save_btn.off("click").on("click", () => {
+				this.save_restaurant_order();
+			});
+
+			recover_btn.off("click").on("click", () => {
+				this.recover_restaurant_order();
+			});
+		}
 		
 		this.page.add_action_icon(
 			"fullscreen",
@@ -567,6 +580,266 @@ erpnext.PointOfSale.Controller = class {
 			document.exitFullscreen();
 			this.toggle_fullscreen_btn(".btn-fullscreen", ".btn-minimize");
 		}
+	}
+
+	async save_restaurant_order() {
+		if (!this.settings.custom_restaurant) return;
+
+		if (!this.frm || !this.frm.doc || this.frm.doc.docstatus !== 0) {
+			frappe.msgprint({
+				title: __("Not Supported"),
+				indicator: "orange",
+				message: __("Only draft orders can be saved to a table."),
+			});
+			return;
+		}
+
+		if (!Array.isArray(this.frm.doc.items) || !this.frm.doc.items.length) {
+			frappe.msgprint({
+				title: __("No Items"),
+				indicator: "orange",
+				message: __("Add at least one item before saving the order."),
+			});
+			return;
+		}
+
+		let picked = this.restaurant_context || null;
+		if (!picked || !picked.table_name) {
+			picked = await this.pick_restaurant_table();
+			if (!picked || !picked.table_name) return;
+		}
+
+		frappe.dom.freeze();
+		try {
+			await this.frm.save();
+
+			await frappe.call({
+				method: "cm_app.api.restaurant_pos.assign_invoice_to_table",
+				args: {
+					pos_profile: this.pos_profile,
+					table_name: picked.table_name,
+					invoice_doctype: this.frm.doc.doctype,
+					invoice_name: this.frm.doc.name,
+				},
+			});
+
+			this.restaurant_context = picked;
+			frappe.show_alert({
+				indicator: "green",
+				message: __("Order saved for table {0}", [picked.table_label || picked.table_name]),
+			});
+
+			this.load_new_invoice_on_pos();
+		} catch (error) {
+			frappe.msgprint({
+				title: __("Could not save order"),
+				indicator: "red",
+				message: error?.message || __("Unexpected error while saving table order."),
+			});
+		} finally {
+			frappe.dom.unfreeze();
+		}
+	}
+
+	async recover_restaurant_order() {
+		if (!this.settings.custom_restaurant) return;
+
+		const picked = await this.pick_restaurant_table();
+		if (!picked || !picked.table_name) return;
+
+		let orders = [];
+		try {
+			const response = await frappe.call({
+				method: "cm_app.api.restaurant_pos.get_table_orders",
+				args: { table_name: picked.table_name },
+			});
+			orders = response.message || [];
+		} catch (error) {
+			frappe.msgprint({
+				title: __("Could not load orders"),
+				indicator: "red",
+				message: error?.message || __("Unexpected error while loading table orders."),
+			});
+			return;
+		}
+
+		if (!orders.length) {
+			frappe.msgprint({
+				title: __("No orders"),
+				indicator: "orange",
+				message: __("There are no open orders for the selected table."),
+			});
+			return;
+		}
+
+		const orderMap = {};
+		orders.forEach((row) => {
+			orderMap[row.name] = row;
+		});
+
+		const dialog = new frappe.ui.Dialog({
+			title: __("Recover Table Order"),
+			fields: [
+				{
+					fieldtype: "Data",
+					fieldname: "table",
+					label: __("Table"),
+					default: picked.table_label || picked.table_name,
+					read_only: 1,
+				},
+				{
+					fieldtype: "Select",
+					fieldname: "order_name",
+					label: __("Order"),
+					reqd: 1,
+					options: orders.map((row) => row.name).join("\n"),
+					default: orders[0].name,
+				},
+			],
+			primary_action_label: __("Load to Cart"),
+			primary_action: async ({ order_name }) => {
+				const selected = orderMap[order_name];
+				if (!selected) {
+					frappe.msgprint(__("Please select a valid order."));
+					return;
+				}
+
+				frappe.dom.freeze();
+				try {
+					dialog.hide();
+					this.restaurant_context = picked;
+					await frappe.run_serially([
+						() => this.make_invoice_frm(selected.invoice_doctype),
+						() => this.sync_draft_invoice_to_frm(selected.invoice_doctype, selected.invoice_name),
+						() => this.frm.refresh(selected.invoice_name),
+						() => this.frm.call("reset_mode_of_payments"),
+						() => this.cart.load_invoice(),
+						() => this.toggle_components(true),
+					]);
+
+					frappe.show_alert({
+						indicator: "green",
+						message: __("Order {0} loaded. You can modify and save again.", [selected.name]),
+					});
+				} catch (error) {
+					frappe.msgprint({
+						title: __("Could not recover order"),
+						indicator: "red",
+						message: error?.message || __("Unexpected error while recovering order."),
+					});
+				} finally {
+					frappe.dom.unfreeze();
+				}
+			},
+		});
+
+		dialog.show();
+	}
+
+	pick_restaurant_table() {
+		return new Promise(async (resolve) => {
+			let done = false;
+			const safeResolve = (value) => {
+				if (done) return;
+				done = true;
+				resolve(value);
+			};
+
+			let data = { zones: [], tables: [] };
+			try {
+				const response = await frappe.call({
+					method: "cm_app.api.restaurant_pos.get_restaurant_dashboard",
+					args: { pos_profile: this.pos_profile },
+				});
+				data = response.message || data;
+			} catch (error) {
+				frappe.msgprint({
+					title: __("Could not load tables"),
+					indicator: "red",
+					message: error?.message || __("Unexpected error while loading restaurant tables."),
+				});
+				safeResolve(null);
+				return;
+			}
+
+			const zones = data.zones || [];
+			const tables = data.tables || [];
+
+			if (!tables.length) {
+				frappe.msgprint({
+					title: __("No tables"),
+					indicator: "orange",
+					message: __("No active tables found for this POS profile's company."),
+				});
+				safeResolve(null);
+				return;
+			}
+
+			const allZoneValue = "__all";
+			const zoneOptions = [allZoneValue, ...zones.map((z) => z.name)];
+
+			const buildTableOptions = (zoneName) => {
+				const filtered = zoneName && zoneName !== allZoneValue
+					? tables.filter((table) => table.zone === zoneName)
+					: tables;
+
+				return filtered.map((table) => ({
+					label: table.table_name,
+					value: table.name,
+				}));
+			};
+
+			const defaultZone = zoneOptions.length > 1 ? zoneOptions[1] : allZoneValue;
+			const initialTableOptions = buildTableOptions(defaultZone);
+
+			const dialog = new frappe.ui.Dialog({
+				title: __("Select Table"),
+				fields: [
+					{
+						fieldtype: "Select",
+						fieldname: "zone_name",
+						label: __("Zone"),
+						reqd: 1,
+						options: zoneOptions.join("\n"),
+						default: defaultZone,
+						onchange: () => {
+							const selectedZone = dialog.get_value("zone_name") || allZoneValue;
+							const options = buildTableOptions(selectedZone);
+							dialog.set_df_property(
+								"table_name",
+								"options",
+								options.map((opt) => opt.value).join("\n")
+							);
+							if (options.length) dialog.set_value("table_name", options[0].value);
+						},
+					},
+					{
+						fieldtype: "Select",
+						fieldname: "table_name",
+						label: __("Table"),
+						reqd: 1,
+						options: initialTableOptions.map((opt) => opt.value).join("\n"),
+						default: initialTableOptions[0]?.value,
+					},
+				],
+				primary_action_label: __("Continue"),
+				primary_action: (values) => {
+					const pickedTable = tables.find((table) => table.name === values.table_name);
+					const pickedZone = zones.find((zone) => zone.name === pickedTable?.zone);
+					safeResolve({
+						table_name: values.table_name || null,
+						table_label: pickedTable
+							? `${pickedZone?.zone_name || pickedTable.zone || "-"} / ${pickedTable.table_name}`
+							: values.table_name || "",
+						zone_name: pickedTable?.zone || null,
+					});
+					dialog.hide();
+				},
+				onhide: () => safeResolve(null),
+			});
+
+			dialog.show();
+		});
 	}
 
 	toggle_fullscreen_btn(show, hide) {
