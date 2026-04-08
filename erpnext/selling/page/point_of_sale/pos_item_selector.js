@@ -26,9 +26,11 @@ erpnext.PointOfSale.ItemSelector = class {
 		this.wrapper.append(
 			`<section class="items-selector">
 				<div class="filter-section">
-					<div class="label">${__("All Items")}</div>
 					<div class="search-field"></div>
-					<div class="item-group-field"></div>
+					<div class="filter-right">
+						<div class="item-group-field"></div>
+						<div class="label">${__("All Items")}</div>
+					</div>
 				</div>
 				<div class="groups-container show-item-image" style="display:none;"></div>
 				<div class="items-container"></div>
@@ -216,11 +218,18 @@ erpnext.PointOfSale.ItemSelector = class {
 		this.attach_clear_btn();
 		// Botón para mostrar la cuadrícula de grupos
 		this.$component.find(".item-group-field").append(`
-			<button class="btn btn-secondary btn-show-groups" style="margin-left:10px;">${__("Grupos")}</button>
-			<button class="btn btn-light btn-show-all" style="margin-left:5px;">${__("Ver Todos")}</button>
+			<button class="btn btn-pos-filter btn-show-groups">${__("Grupos")}</button>
+			<button class="btn btn-pos-filter btn-show-all">${__("Ver Todos")}</button>
 		`);
 		this.$component.find(".btn-show-groups").on("click", () => {
 			this.toggle_group_and_items();
+		});
+		this.$component.find(".btn-show-all").on("click", () => {
+			this.item_group = this.parent_item_group;
+			this.$groups_container.hide();
+			this.$items_container.show();
+			this.filter_items({ search_term: "" });
+			this.$component.find(".label").text(__("Ver Todos"));
 		});
 	}
 toggle_group_and_items() {
@@ -233,14 +242,6 @@ toggle_group_and_items() {
 			// Si el grid de grupos está oculto, mostrar grupos y ocultar items
 			this.show_groups_container();
 		}
-		this.$component.find(".btn-show-all").on("click", () => {
-			// Mostrar todos los productos (grupo principal)
-			this.item_group = this.parent_item_group;
-			this.$groups_container.hide();
-			this.$items_container.show();
-			this.filter_items({ search_term: "" });
-			this.$component.find(".label").text(__("Ver Todos"));
-		});
 	}
 
 	set_item_selector_filter_label(value) {
