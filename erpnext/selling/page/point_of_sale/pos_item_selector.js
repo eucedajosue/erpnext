@@ -29,7 +29,7 @@ erpnext.PointOfSale.ItemSelector = class {
 					<div class="search-field"></div>
 					<div class="filter-right">
 						<div class="item-group-field"></div>
-						<div class="label">${__("All Items")}</div>
+						<div class="label">${__("Ver Todos")}</div>
 					</div>
 				</div>
 				<div class="groups-container show-item-image" style="display:none;"></div>
@@ -214,6 +214,7 @@ erpnext.PointOfSale.ItemSelector = class {
 		});
 		
 		this.search_field.toggle_label(false);
+		this.search_field.$wrapper.addClass("pos-search-with-icon");
 
 		this.attach_clear_btn();
 		// Botón para mostrar la cuadrícula de grupos
@@ -247,7 +248,7 @@ toggle_group_and_items() {
 	set_item_selector_filter_label(value) {
 		const $filter_label = this.$component.find(".label");
 
-		$filter_label.html(value ? __(value) : __("All Items"));
+		$filter_label.html(value ? __(value) : __("Ver Todos"));
 	}
 
 	hide_open_link_btn() {
@@ -255,6 +256,10 @@ toggle_group_and_items() {
 	}
 
 	attach_clear_btn() {
+		this.search_field.$wrapper.find(".control-input").prepend(
+			`<span class="search-icon" aria-hidden="true">${frappe.utils.icon("search", "sm")}</span>`
+		);
+
 		this.search_field.$wrapper.find(".control-input").append(
 			`<span class="link-btn">
 				<a class="btn-open no-decoration" title="${__("Clear")}">
