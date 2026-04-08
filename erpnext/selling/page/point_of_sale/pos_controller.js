@@ -548,6 +548,7 @@ erpnext.PointOfSale.Controller = class {
 		this.page.clear_icons();
 		this.page.set_primary_action(__("New Invoice"), this.new_invoice_event.bind(this));
 		this.page.set_secondary_action(__("Recent Orders"), this.toggle_recent_order.bind(this));
+		this.configure_mobile_header_actions();
 
 		if (this.settings.custom_restaurant) {
 			const save_btn = this.page.add_inner_button(__("Guardar Pedido"), () => {});
@@ -574,6 +575,35 @@ erpnext.PointOfSale.Controller = class {
 			"btn-minimize hide",
 			"Minimize"
 		);
+	}
+
+	is_mobile_view() {
+		return window.matchMedia("(max-width: 768px)").matches;
+	}
+
+	configure_mobile_header_actions() {
+		const apply_mobile_header_actions = () => {
+			const is_mobile = this.is_mobile_view();
+
+			if (this.page.btn_primary?.length) {
+				this.page.btn_primary.toggleClass("hide", is_mobile);
+			}
+
+			if (this.page.btn_secondary?.length) {
+				this.page.btn_secondary.toggleClass("hide", is_mobile);
+			}
+
+			if (is_mobile && !this._mobile_menu_actions_added) {
+				this.page.add_menu_item(__("New Invoice"), this.new_invoice_event.bind(this));
+				this.page.add_menu_item(__("Recent Orders"), this.toggle_recent_order.bind(this));
+				this._mobile_menu_actions_added = true;
+			}
+		};
+
+		apply_mobile_header_actions();
+		$(window)
+			.off("resize.pos_mobile_header_actions")
+			.on("resize.pos_mobile_header_actions", apply_mobile_header_actions);
 	}
 
 	bind_fullscreen_events() {
@@ -858,7 +888,10 @@ erpnext.PointOfSale.Controller = class {
 
 	toggle_recent_order() {
 		const show = this.recent_order_list.$component.is(":hidden");
-		this.page.btn_secondary.get(0).innerText = show ? __("Hide Recent Orders") : __("Recent Orders");
+		if (this.page.btn_secondary?.length) {
+			this.page.btn_secondary.get(0).innerText =
+				show ? __("Hide Recent Orders") : __("Recent Orders");
+		}
 		this.toggle_recent_order_list(show);
 	}
 
@@ -982,6 +1015,12 @@ erpnext.PointOfSale.Controller = class {
 			settings: this.settings,
 			events: {
 				get_frm: () => this.frm,
+
+				cart_updated: () => {
+					if (this.item_selector && typeof this.item_selector.refresh_cart_qty_controls === "function") {
+						this.item_selector.refresh_cart_qty_controls();
+					}
+				},
 
 				cart_item_clicked: (item) => {
 					const item_row = this.get_item_from_frm(item);
@@ -1319,8 +1358,11 @@ erpnext.PointOfSale.Controller = class {
 			item_row = this.get_item_from_frm(item);
 			const item_row_exists = !$.isEmptyObject(item_row);
 
-			const from_selector = field === "qty" && value === "+1";
-			if (from_selector) value = flt(item_row.qty) + flt(value);
+			const from_selector =
+				field === "qty" && (value === "+1" || value === "-1");
+			if (from_selector && item_row_exists) {
+				value = Math.max(flt(item_row.qty) + flt(value), 0);
+			}
 
 			if (item_row_exists) {
 				if (field === "qty") value = flt(value);
@@ -1408,6 +1450,9 @@ erpnext.PointOfSale.Controller = class {
 					this.cart._suppress_cart_refresh = false;
 				}, 0);
 			}
+			if (this.item_selector && typeof this.item_selector.refresh_cart_qty_controls === "function") {
+				this.item_selector.refresh_cart_qty_controls();
+			}
 			return item_row; // eslint-disable-line no-unsafe-finally
 		}
 	}
@@ -1429,14 +1474,35 @@ erpnext.PointOfSale.Controller = class {
 			// if item is clicked twice from item selector
 			// then "item_code, batch_no, uom, rate" will help in getting the exact item
 			// to increase the qty by one
-			const has_batch_no = batch_no !== "null" && batch_no !== null;
-			item_row = this.frm.doc.items.find(
+			const has_batch_no = !!batch_no;
+			const target_rate = flt(rate || 0);
+			const rate_matches = (row_rate) => Math.abs(flt(row_rate || 0) - target_rate) < 0.0001;
+
+			const exact_match = this.frm.doc.items.find(
 				(i) =>
 					i.item_code === item_code &&
-					(!has_batch_no || (has_batch_no && i.batch_no === batch_no)) &&
-					i.uom === uom &&
-					i.price_list_rate === flt(rate)
+					(!has_batch_no || i.batch_no === batch_no) &&
+					(!uom || i.uom === uom) &&
+					rate_matches(i.price_list_rate ?? i.rate)
 			);
+
+			if (exact_match) {
+				item_row = exact_match;
+			} else {
+				// Fallback for selector clicks where rate/uom can arrive with slight differences.
+				const candidates = (this.frm.doc.items || []).filter(
+					(i) => i.item_code === item_code && (!has_batch_no || i.batch_no === batch_no)
+				);
+
+				if (candidates.length === 1) {
+					item_row = candidates[0];
+				} else if (candidates.length > 1) {
+					item_row =
+						candidates.find((i) => (!uom || i.uom === uom) && rate_matches(i.price_list_rate ?? i.rate)) ||
+						candidates.find((i) => !uom || i.uom === uom) ||
+						null;
+				}
+			}
 		}
 
 		return item_row || {};

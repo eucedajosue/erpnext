@@ -745,6 +745,9 @@ erpnext.PointOfSale.ItemCart = class {
 		}
 
 		this.refresh_recibo_visibility(frm);
+		if (typeof this.events?.cart_updated === "function") {
+			this.events.cart_updated();
+		}
 	}
 
 	render_net_total(value) {

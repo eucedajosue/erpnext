@@ -41,6 +41,7 @@ erpnext.PointOfSale.Payment = class {
 				<div class="totals-section">
 					<div class="totals"></div>
 				</div>
+				<div class="payment-edit-cart-btn">${__("Edit Cart")}</div>
 				<div class="submit-order-btn">${__("Complete Order")}</div>
 			</section>`
 		);
@@ -209,6 +210,10 @@ erpnext.PointOfSale.Payment = class {
 
 	bind_events() {
 		const me = this;
+
+		this.$component.on("click", ".payment-edit-cart-btn", function () {
+			me.edit_cart();
+		});
 
 		this.$payment_modes.on("click", ".mode-of-payment", function (e) {
 			const mode_clicked = $(this);
@@ -542,8 +547,17 @@ erpnext.PointOfSale.Payment = class {
 	}
 
 	edit_cart() {
-		this.events.toggle_other_sections(false);
+		const $pos_root = this.wrapper.hasClass("point-of-sale-app")
+			? this.wrapper
+			: this.wrapper.closest(".point-of-sale-app");
+
+		// Close payment UI first so fixed mobile actions disappear immediately.
 		this.toggle_component(false);
+		if ($pos_root && $pos_root.length) {
+			$pos_root.removeClass("payment-open");
+		}
+
+		this.events.toggle_other_sections(false);
 	}
 
 	checkout() {
@@ -814,7 +828,13 @@ erpnext.PointOfSale.Payment = class {
 	}
 
 	toggle_component(show) {
+		const $pos_root = this.wrapper.hasClass("point-of-sale-app")
+			? this.wrapper
+			: this.wrapper.closest(".point-of-sale-app");
 		show ? this.$component.css("display", "flex") : this.$component.css("display", "none");
+		if ($pos_root && $pos_root.length) {
+			$pos_root.toggleClass("payment-open", !!show);
+		}
 	}
 
 	sanitize_mode_of_payment(mode_of_payment) {

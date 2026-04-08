@@ -19,6 +19,7 @@ erpnext.PointOfSale.ItemSelector = class {
 		this.make_search_bar();
 		this.load_items_data();
 		this.bind_events();
+		this.setup_mobile_items_view();
 		this.attach_shortcuts();
 	}
 
@@ -105,6 +106,8 @@ erpnext.PointOfSale.ItemSelector = class {
 			const item_html = this.get_item_html(item);
 			this.$items_container.append(item_html);
 		});
+
+		this.refresh_cart_qty_controls();
 	}
 
 	set_items_not_found_banner() {
@@ -129,6 +132,7 @@ erpnext.PointOfSale.ItemSelector = class {
 		const precision = flt(price_list_rate, 2) % 1 != 0 ? 2 : 0;
 		let indicator_color;
 		let qty_to_display = actual_qty;
+		const qty_in_cart = this.get_item_qty_in_cart(item);
 
 		if (item.is_stock_item) {
 			indicator_color = actual_qty > 10 ? "green" : actual_qty <= 0 ? "red" : "orange";
@@ -180,8 +184,15 @@ erpnext.PointOfSale.ItemSelector = class {
 					</div>
 					${
 						!me.hide_images
-							? `<div class="item-rate">
-								${format_currency(price_list_rate, item.currency, precision) || 0} / ${uom}
+							? `<div class="item-rate-controls">
+								<div class="item-rate">
+									${format_currency(price_list_rate, item.currency, precision) || 0} / ${uom}
+								</div>
+										<div class="item-cart-controls ${qty_in_cart > 0 ? "has-qty" : "is-hidden"}">
+									<button type="button" class="item-card-qty-btn item-card-qty-decrease" title="Disminuir" ${qty_in_cart > 0 ? "" : "disabled"}>-</button>
+									<span class="item-cart-qty">${qty_in_cart}</span>
+									<button type="button" class="item-card-qty-btn item-card-qty-increase" title="Aumentar">+</button>
+								</div>
 							</div>`
 							: `
 							<div class="item-price">${format_currency(price_list_rate, item.currency, precision) || 0}</div>
@@ -191,6 +202,56 @@ erpnext.PointOfSale.ItemSelector = class {
 					}
 				</div>
 			</div>`;
+	}
+
+	get_item_qty_in_cart(item) {
+		const frm = this.events.get_frm();
+		const cart_items = frm?.doc?.items || [];
+		const has_batch_no = !!item.batch_no;
+		const item_rate = flt(item.price_list_rate ?? item.rate ?? 0);
+
+		return cart_items
+			.filter((row) => {
+				const same_item = row.item_code === item.item_code;
+				const same_uom = row.uom === item.uom;
+				const same_rate = flt(row.price_list_rate ?? row.rate ?? 0) === item_rate;
+				const same_batch = !has_batch_no || row.batch_no === item.batch_no;
+				return same_item && same_uom && same_rate && same_batch;
+			})
+			.reduce((total, row) => total + flt(row.qty), 0);
+	}
+
+	get_item_data_from_wrapper($item) {
+		const get_data_value = (attribute) => {
+			const value = unescape($item.attr(attribute));
+			if (value === "undefined" || value === "null" || value === "") return undefined;
+			return value;
+		};
+
+		return {
+			item_code: get_data_value("data-item-code"),
+			batch_no: get_data_value("data-batch-no"),
+			serial_no: get_data_value("data-serial-no"),
+			uom: get_data_value("data-uom"),
+			rate: flt(get_data_value("data-rate") || 0),
+			stock_uom: get_data_value("data-stock-uom"),
+			has_serial_no: parseInt(unescape($item.attr("data-has-serial-no"))) || 0,
+			has_batch_no: parseInt(unescape($item.attr("data-has-batch-no"))) || 0,
+		};
+	}
+
+	refresh_cart_qty_controls() {
+		if (!this.$items_container || !this.$items_container.length) return;
+
+		this.$items_container.find(".item-wrapper").each((_, element) => {
+			const $item = $(element);
+			const item_data = this.get_item_data_from_wrapper($item);
+			const qty = this.get_item_qty_in_cart(item_data);
+			const has_qty = flt(qty) > 0;
+			$item.find(".item-cart-qty").text(flt(qty));
+			$item.find(".item-card-qty-decrease").prop("disabled", !has_qty);
+			$item.find(".item-cart-controls").toggleClass("is-hidden", !has_qty).toggleClass("has-qty", has_qty);
+		});
 	}
 
 	handle_broken_image($img) {
@@ -217,6 +278,33 @@ erpnext.PointOfSale.ItemSelector = class {
 		this.search_field.$wrapper.addClass("pos-search-with-icon");
 
 		this.attach_clear_btn();
+		this.$mobile_grid_toggle_btn = $(
+			`<button class="btn btn-default btn-sm mobile-grid-toggle-btn">${__("Mostrar items")}</button>`
+		);
+		this.$component.find(".search-field").append(this.$mobile_grid_toggle_btn);
+		this._mobile_toggle_btn_pressed = false;
+
+		this.$mobile_grid_toggle_btn.on("mousedown", (e) => {
+			// Keep focus in search input instead of moving it to the toggle button.
+			this._mobile_toggle_btn_pressed = true;
+			e.preventDefault();
+		});
+
+		this.$mobile_grid_toggle_btn.on("touchstart", () => {
+			this._mobile_toggle_btn_pressed = true;
+		});
+
+		this.$mobile_grid_toggle_btn.on("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			if (!this._mobile_toggle_btn_pressed) {
+				return;
+			}
+			this._mobile_toggle_btn_pressed = false;
+			const currently_collapsed = this.$component.hasClass("mobile-items-collapsed");
+			this.set_mobile_items_collapsed(!currently_collapsed, { source: "toggle-btn" });
+		});
+
 		// Botón para mostrar la cuadrícula de grupos
 		this.$component.find(".item-group-field").append(`
 			<button class="btn btn-pos-filter btn-show-groups">${__("Grupos")}</button>
@@ -284,6 +372,33 @@ toggle_group_and_items() {
 		const me = this;
 		window.onScan = onScan;
 
+		this.$component.on("click", ".item-card-qty-increase", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			const $item = $(this).closest(".item-wrapper");
+			const item_data = me.get_item_data_from_wrapper($item);
+			me.events.item_selected({
+				field: "qty",
+				value: "+1",
+				item: item_data,
+			});
+		});
+
+		this.$component.on("click", ".item-card-qty-decrease", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			const $item = $(this).closest(".item-wrapper");
+			const item_data = me.get_item_data_from_wrapper($item);
+			const qty_in_cart = me.get_item_qty_in_cart(item_data);
+			if (flt(qty_in_cart) <= 0) return;
+
+			me.events.item_selected({
+				field: "qty",
+				value: "-1",
+				item: item_data,
+			});
+		});
+
 		this.$component.on("click", ".group-wrapper", (e) => {
 				const group = $(e.currentTarget).data("group");
 				this.item_group = group;
@@ -334,31 +449,12 @@ toggle_group_and_items() {
 
 		this.$component.on("click", ".item-wrapper", function () {
 			const $item = $(this);
-			const item_code = unescape($item.attr("data-item-code"));
-			let batch_no = unescape($item.attr("data-batch-no"));
-			let serial_no = unescape($item.attr("data-serial-no"));
-			let uom = unescape($item.attr("data-uom"));
-			let rate = unescape($item.attr("data-rate"));
-			let stock_uom = unescape($item.attr("data-stock-uom"));
-			let has_serial_no = unescape($item.attr("data-has-serial-no"));
-			let has_batch_no = unescape($item.attr("data-has-batch-no"));
-
-			// escape(undefined) returns "undefined" then unescape returns "undefined"
-			batch_no = batch_no === "undefined" ? undefined : batch_no;
-			serial_no = serial_no === "undefined" ? undefined : serial_no;
-			uom = uom === "undefined" ? undefined : uom;
-			rate = rate === "undefined" ? undefined : rate;
-			stock_uom = stock_uom === "undefined" ? undefined : stock_uom;
-			has_serial_no = has_serial_no === "undefined" ? undefined : has_serial_no;
-			has_batch_no = has_batch_no === "undefined" ? undefined : has_batch_no;
-
-			has_serial_no = parseInt(has_serial_no) || 0;
-			has_batch_no = parseInt(has_batch_no) || 0;
+			const item_data = me.get_item_data_from_wrapper($item);
 
 			me.events.item_selected({
 				field: "qty",
 				value: "+1",
-				item: { item_code, batch_no, serial_no, uom, rate, stock_uom, has_serial_no, has_batch_no },
+				item: item_data,
 			});
 		});
 
@@ -374,7 +470,49 @@ toggle_group_and_items() {
 
 		this.search_field.$input.on("focus", () => {
 			this.$clear_search_btn.toggle(Boolean(this.search_field.$input.val()));
+			if (this.is_mobile_view()) {
+				this.set_mobile_items_collapsed(false, { source: "search-input" });
+			}
 		});
+
+		this.search_field.$input.on("click touchstart", () => {
+			if (this.is_mobile_view()) {
+				this.set_mobile_items_collapsed(false, { source: "search-input" });
+			}
+		});
+	}
+
+	is_mobile_view() {
+		return window.matchMedia("(max-width: 768px)").matches;
+	}
+
+	setup_mobile_items_view() {
+		this.set_mobile_items_collapsed(this.is_mobile_view());
+
+		$(window).on("resize.pos_mobile_items_view", () => {
+			this.set_mobile_items_collapsed(this.is_mobile_view());
+		});
+	}
+
+	set_mobile_items_collapsed(collapsed, options = {}) {
+		if (!this.$component || !this.$component.length) return;
+
+		if (!this.is_mobile_view()) {
+			this.$component.removeClass("mobile-items-collapsed mobile-items-expanded");
+			if (this.$mobile_grid_toggle_btn) {
+				this.$mobile_grid_toggle_btn.hide();
+			}
+			return;
+		}
+
+		this.$component.toggleClass("mobile-items-collapsed", collapsed);
+		this.$component.toggleClass("mobile-items-expanded", !collapsed);
+
+		if (this.$mobile_grid_toggle_btn) {
+			this.$mobile_grid_toggle_btn
+				.show()
+				.text(collapsed ? __("Mostrar items") : __("Ocultar items"));
+		}
 	}
 
 	attach_shortcuts() {

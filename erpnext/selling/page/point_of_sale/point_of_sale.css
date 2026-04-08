@@ -7,3 +7,341 @@
 	margin-right: 10px;
 	cursor: pointer;
 }
+
+.point-of-sale-app .items-selector .item-rate-controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	width: 100%;
+	margin-top: 6px;
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-rate {
+	font-size: 16px;
+	line-height: 1;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	color: #111827;
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-cart-controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 2px;
+	border-radius: 999px;
+	background: #f5f7fb;
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-cart-controls.is-hidden {
+	display: none;
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-card-qty-btn {
+	width: 34px;
+	height: 34px;
+	border: none;
+	border-radius: 999px;
+	font-size: 22px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	cursor: pointer;
+	background: #ffffff;
+	color: #334155;
+	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-card-qty-btn.item-card-qty-increase {
+	background: #2563eb;
+	color: #ffffff;
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-card-qty-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+.point-of-sale-app .items-selector .item-rate-controls .item-cart-qty {
+	min-width: 16px;
+	text-align: center;
+	font-size: 18px;
+	font-weight: 500;
+	color: #1f2937;
+}
+
+@media (max-width: 768px) {
+	.point-of-sale-app .items-selector .item-wrapper {
+		position: relative;
+	}
+
+	.point-of-sale-app .items-selector .item-rate-controls {
+		justify-content: flex-end;
+	}
+
+	.point-of-sale-app .items-selector .item-rate-controls .item-rate {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		z-index: 2;
+		font-size: 14px;
+		line-height: 1;
+		padding: 2px 6px;
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.95);
+	}
+
+	.point-of-sale-app .items-selector .mobile-grid-toggle-btn {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 8px;
+		white-space: nowrap;
+	}
+
+	.point-of-sale-app .items-selector.mobile-items-collapsed {
+		min-height: auto !important;
+		height: auto !important;
+		max-height: none !important;
+		overflow: visible !important;
+	}
+
+	.point-of-sale-app .items-selector.mobile-items-collapsed .items-container,
+	.point-of-sale-app .items-selector.mobile-items-collapsed .groups-container,
+	.point-of-sale-app .items-selector.mobile-items-collapsed .filter-right {
+		display: none !important;
+	}
+
+	.point-of-sale-app .items-selector.mobile-items-expanded .search-field {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.point-of-sale-app .customer-cart-container .cart-totals-section {
+		padding-bottom: 132px;
+	}
+
+	.point-of-sale-app .customer-cart-container .cart-totals-section .grand-total-container {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: calc(52px + env(safe-area-inset-bottom));
+		z-index: 60;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 10px 0;
+		background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+		color: #ffffff;
+		box-shadow: 0 -8px 20px rgba(22, 163, 74, 0.35);
+	}
+
+	.point-of-sale-app .customer-cart-container .cart-totals-section .grand-total-container > * {
+		margin-left: 14px;
+		margin-right: 14px;
+	}
+
+	.point-of-sale-app .customer-cart-container .cart-totals-section .checkout-btn {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 61;
+		height: calc(52px + env(safe-area-inset-bottom));
+		padding: 0 14px env(safe-area-inset-bottom);
+		display: flex !important;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0;
+		background: #15803d;
+		color: #ffffff;
+		font-weight: 700;
+	}
+
+	.point-of-sale-app.payment-open .customer-cart-container .cart-totals-section .grand-total-container,
+	.point-of-sale-app.payment-open .customer-cart-container .cart-totals-section .checkout-btn {
+		display: none !important;
+	}
+
+	.point-of-sale-app.payment-open .customer-cart-container .cart-totals-section {
+		padding-bottom: 0;
+	}
+
+	.point-of-sale-app .customer-cart-container .cart-container .abs-cart-container .cart-items-section .cart-item-wrapper .item-name-desc {
+		white-space: normal !important;
+		overflow: visible !important;
+		text-overflow: unset !important;
+	}
+
+	.point-of-sale-app .customer-cart-container .cart-container .abs-cart-container .cart-items-section .cart-item-wrapper .item-name-desc .item-name,
+	.point-of-sale-app .customer-cart-container .cart-container .abs-cart-container .cart-items-section .cart-item-wrapper .item-name-desc .item-sales-person {
+		display: block;
+		white-space: normal !important;
+		overflow: visible !important;
+		text-overflow: unset !important;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+		line-height: 1.25;
+	}
+
+	.point-of-sale-app.payment-open .payment-container {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 12px;
+		padding-bottom: calc(138px + env(safe-area-inset-bottom));
+		background: #f8fafc;
+		border: 1px solid #e5e7eb;
+		border-radius: 14px;
+	}
+
+	.point-of-sale-app.payment-open .customer-cart-container {
+		display: none !important;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-split-container,
+	.point-of-sale-app.payment-open .payment-container .fields-numpad-container {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .fields-numpad-container {
+		height: auto;
+		justify-content: flex-start;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .fields-section {
+		flex: 0;
+		padding-left: 0;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .fields-section .invoice-fields {
+		height: auto;
+		margin-left: 0;
+		padding: 0;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-container-left,
+	.point-of-sale-app.payment-open .payment-container .payment-container-right {
+		width: 100%;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-modes {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 8px;
+		height: auto !important;
+		min-height: 0 !important;
+		max-height: none !important;
+		overflow: visible !important;
+		padding-right: 0;
+		margin-right: 0;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-modes > .payment-mode-wrapper {
+		padding: 0;
+		min-width: 0;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .mode-of-payment {
+		min-height: 54px;
+		padding: 10px 12px;
+		border-radius: 12px;
+		border: 1px solid #dbe3ec;
+		background: #ffffff;
+		font-weight: 600;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+	}
+
+	.point-of-sale-app.payment-open .payment-container .mode-of-payment.border-primary {
+		border-color: #2563eb;
+		box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-shortcuts {
+		grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+		gap: 6px !important;
+		margin-top: 8px !important;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-shortcuts .shortcut-btn {
+		padding: 8px 4px !important;
+		border-radius: 10px;
+		font-size: 13px !important;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .number-pad {
+		position: static !important;
+		right: auto !important;
+		display: block !important;
+		width: 100%;
+		margin-top: 4px;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .number-pad .numpad-container {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		background: transparent;
+		border-radius: 0;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .number-pad .numpad-container > .numpad-btn {
+		height: 52px;
+		width: 100%;
+		border-radius: 12px;
+		font-weight: 600;
+		background: #ffffff;
+		border: 1px solid #d5dde7;
+		box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+	}
+
+	.point-of-sale-app.payment-open .payment-container .totals-section {
+		padding: 10px;
+		background: #ffffff;
+		border: 1px solid #e6ebf1;
+		border-radius: 12px;
+	}
+
+	.point-of-sale-app.payment-open .payment-container .submit-order-btn {
+		position: fixed;
+		left: 12px;
+		right: 12px;
+		bottom: calc(8px + env(safe-area-inset-bottom));
+		height: 52px;
+		z-index: 70;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 12px;
+		background: #0f172a;
+		color: #ffffff;
+		font-size: 22px;
+		font-weight: 700;
+		box-shadow: 0 8px 18px rgba(15, 23, 42, 0.32);
+	}
+
+	.point-of-sale-app.payment-open .payment-container .payment-edit-cart-btn {
+		position: fixed;
+		left: 12px;
+		right: 12px;
+		bottom: calc(68px + env(safe-area-inset-bottom));
+		height: 48px;
+		z-index: 69;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 12px;
+		background: #f97316;
+		color: #ffffff;
+		font-size: 18px;
+		font-weight: 700;
+		box-shadow: 0 6px 14px rgba(249, 115, 22, 0.28);
+	}
+}
