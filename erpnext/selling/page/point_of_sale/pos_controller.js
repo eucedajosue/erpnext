@@ -282,6 +282,10 @@ erpnext.PointOfSale.Controller = class {
 		);
 
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");
+		this.page.add_menu_item(
+			__("Remove Item Tax Templates"),
+			this.remove_item_tax_templates.bind(this)
+		);
 		this.page.add_menu_item(__("Close the POS"), this.close_pos.bind(this), false, "Shift+Ctrl+C");
 	}
 
@@ -896,6 +900,53 @@ erpnext.PointOfSale.Controller = class {
 			() => this.toggle_components(true),
 			() => frappe.dom.unfreeze(),
 		]);
+	}
+
+	async remove_item_tax_templates() {
+		if (!this.$components_wrapper.is(":visible")) return;
+
+		const items = this.frm?.doc?.items || [];
+		if (!items.length) {
+			frappe.show_alert({ message: __("No items in current invoice."), indicator: "orange" });
+			return;
+		}
+
+		const items_with_template = items.filter((item) => !!item.item_tax_template);
+		if (!items_with_template.length) {
+			frappe.show_alert({ message: __("No item tax templates to remove."), indicator: "blue" });
+			return;
+		}
+
+		frappe.confirm(
+			__("This will remove Item Tax Template from all items in this invoice. Continue?"),
+			async () => {
+				frappe.dom.freeze();
+				try {
+					for (const item of items_with_template) {
+						await frappe.model.set_value(
+							item.doctype || "Sales Invoice Item",
+							item.name,
+							"item_tax_template",
+							""
+						);
+					}
+
+					if (typeof this.frm.calculate_taxes_and_totals === "function") {
+						this.frm.calculate_taxes_and_totals();
+					}
+
+					this.cart.load_invoice();
+					frappe.show_alert({
+						message: __("Removed Item Tax Template from {0} items.", [
+							items_with_template.length,
+						]),
+						indicator: "green",
+					});
+				} finally {
+					frappe.dom.unfreeze();
+				}
+			}
+		);
 	}
 
 	close_pos() {
