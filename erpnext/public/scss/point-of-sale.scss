@@ -641,6 +641,40 @@
 								color: var(--gray-600);
 								font-weight: 500;
 							}
+
+							> .item-qty-actions {
+								display: flex;
+								align-items: center;
+								justify-content: flex-start;
+								gap: var(--margin-2xs);
+								margin-top: var(--margin-2xs);
+
+								> .qty-btn {
+									display: inline-flex;
+									align-items: center;
+									justify-content: center;
+									width: 1.5rem;
+									height: 1.5rem;
+									border: none;
+									border-radius: var(--border-radius-sm);
+									background: var(--control-bg);
+									font-weight: 700;
+									font-size: var(--text-md);
+									line-height: 1;
+									padding: 0;
+									cursor: pointer;
+								}
+
+								> .qty-decrease-btn {
+									background: var(--red-100);
+									color: var(--red-600);
+								}
+
+								> .qty-increase-btn {
+									background: var(--green-100);
+									color: var(--green-700);
+								}
+							}
 						}
 
 						> .item-qty-rate {
@@ -673,28 +707,6 @@
 							}
 						}
 
-						> .item-qty-actions {
-							display: flex;
-							align-items: center;
-							gap: var(--margin-2xs);
-							flex-shrink: 0;
-
-							> .qty-btn {
-								display: inline-flex;
-								align-items: center;
-								justify-content: center;
-								width: 1.5rem;
-								height: 1.5rem;
-								border: none;
-								border-radius: var(--border-radius-sm);
-								background: var(--control-bg);
-								font-weight: 700;
-								font-size: var(--text-md);
-								line-height: 1;
-								padding: 0;
-								cursor: pointer;
-							}
-						}
 					}
 				}
 

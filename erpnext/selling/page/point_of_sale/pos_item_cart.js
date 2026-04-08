@@ -352,6 +352,7 @@ erpnext.PointOfSale.ItemCart = class {
 		});
 
 		this.$cart_items_wrapper.on("click", ".qty-increase-btn", function (e) {
+			e.preventDefault();
 			e.stopPropagation();
 			const $cart_item = $(this).closest(".cart-item-wrapper");
 			const item_row_name = unescape($cart_item.attr("data-row-name"));
@@ -359,22 +360,27 @@ erpnext.PointOfSale.ItemCart = class {
 			if (frm && frm.doc && Array.isArray(frm.doc.items)) {
 				const item = frm.doc.items.find(i => i.name == item_row_name);
 				if (item) {
+					const scroll_top = me.$cart_items_wrapper.scrollTop();
+					me._suppress_cart_refresh = true;
 					frappe.model.set_value(item.doctype || "Sales Invoice Item", item.name, "qty", flt(item.qty) + 1).then(() => {
-						// El callback de set_value asegura que los triggers y totales se actualicen correctamente
-						me.update_item_html(item);
+						const updated_item = me.get_item_from_frm(item) || item;
+						me.refresh_item_qty_rate_in_row(updated_item);
 						if (typeof frm.calculate_taxes_and_totals === "function") {
 							frm.calculate_taxes_and_totals();
 						}
 						me.update_totals_section(frm);
-						if (frm.fields_dict && frm.fields_dict.items && frm.fields_dict.items.grid) {
-							frm.fields_dict.items.grid.refresh();
-						}
+						me.$cart_items_wrapper.scrollTop(scroll_top);
+					}).finally(() => {
+						setTimeout(() => {
+							me._suppress_cart_refresh = false;
+						}, 0);
 					});
 				}
 			}
 		});
 
 		this.$cart_items_wrapper.on("click", ".qty-decrease-btn", function (e) {
+			e.preventDefault();
 			e.stopPropagation();
 			const $cart_item = $(this).closest(".cart-item-wrapper");
 			const item_row_name = unescape($cart_item.attr("data-row-name"));
@@ -382,15 +388,20 @@ erpnext.PointOfSale.ItemCart = class {
 			if (frm && frm.doc && Array.isArray(frm.doc.items)) {
 				const item = frm.doc.items.find(i => i.name == item_row_name);
 				if (item && flt(item.qty) > 1) {
+					const scroll_top = me.$cart_items_wrapper.scrollTop();
+					me._suppress_cart_refresh = true;
 					frappe.model.set_value(item.doctype || "Sales Invoice Item", item.name, "qty", flt(item.qty) - 1).then(() => {
-						me.update_item_html(item);
+						const updated_item = me.get_item_from_frm(item) || item;
+						me.refresh_item_qty_rate_in_row(updated_item);
 						if (typeof frm.calculate_taxes_and_totals === "function") {
 							frm.calculate_taxes_and_totals();
 						}
 						me.update_totals_section(frm);
-						if (frm.fields_dict && frm.fields_dict.items && frm.fields_dict.items.grid) {
-							frm.fields_dict.items.grid.refresh();
-						}
+						me.$cart_items_wrapper.scrollTop(scroll_top);
+					}).finally(() => {
+						setTimeout(() => {
+							me._suppress_cart_refresh = false;
+						}, 0);
 					});
 				}
 			}
@@ -849,15 +860,12 @@ erpnext.PointOfSale.ItemCart = class {
 					${item_data.item_name}
 				</div>
         		${get_sales_person_html(item_data)}
-			</div>
-			<div class="item-qty-actions">
-			<button type="button" class="qty-btn qty-decrease-btn" title="Disminuir">-</button>
-			<button type="button" class="qty-btn qty-increase-btn" title="Aumentar">+</button>
+				${get_qty_actions_html()}
 			</div>
 			${get_rate_discount_html()}`
 		);
 
-		set_dynamic_rate_header_width();
+		this.set_dynamic_rate_header_width();
 
 		function get_sales_person_html(item_data) {
 			if (item_data.custom_sales_person) {
@@ -866,41 +874,15 @@ erpnext.PointOfSale.ItemCart = class {
 			return "";
 		}
 
-		function set_dynamic_rate_header_width() {
-			const rate_cols = Array.from(me.$cart_items_wrapper.find(".item-rate-amount"));
-			me.$cart_header.find(".rate-amount-header").css("width", "");
-			me.$cart_items_wrapper.find(".item-rate-amount").css("width", "");
-			let max_width = rate_cols.reduce((max_width, elm) => {
-				if ($(elm).width() > max_width) max_width = $(elm).width();
-				return max_width;
-			}, 0);
-
-			max_width += 1;
-			if (max_width == 1) max_width = "";
-
-			me.$cart_header.find(".rate-amount-header").css("width", max_width);
-			me.$cart_items_wrapper.find(".item-rate-amount").css("width", max_width);
+		function get_qty_actions_html() {
+			return `<div class="item-qty-actions">
+				<button type="button" class="qty-btn qty-decrease-btn" title="Disminuir">-</button>
+				<button type="button" class="qty-btn qty-increase-btn" title="Aumentar">+</button>
+			</div>`;
 		}
 
 		function get_rate_discount_html() {
-			if (item_data.rate && item_data.amount && item_data.rate !== item_data.amount) {
-				return `
-					<div class="item-qty-rate">
-						<div class="item-qty"><span>${item_data.qty || 0} ${item_data.uom}</span></div>
-						<div class="item-rate-amount">
-							<div class="item-rate">${format_currency(item_data.amount, currency)}</div>
-							<div class="item-amount">${format_currency(item_data.rate, currency)}</div>
-						</div>
-					</div>`;
-			} else {
-				return `
-					<div class="item-qty-rate">
-						<div class="item-qty"><span>${item_data.qty || 0} ${item_data.uom}</span></div>
-						<div class="item-rate-amount">
-							<div class="item-rate">${format_currency(item_data.rate, currency)}</div>
-						</div>
-					</div>`;
-			}
+			return me.get_item_qty_rate_html(item_data, currency);
 		}
 
 		function get_item_image_html() {
@@ -916,6 +898,54 @@ erpnext.PointOfSale.ItemCart = class {
 				return `<div class="item-image item-abbr">${frappe.get_abbr(item_name)}</div>`;
 			}
 		}
+	}
+
+	get_item_qty_rate_html(item_data, currency) {
+		if (item_data.rate && item_data.amount && item_data.rate !== item_data.amount) {
+			return `
+				<div class="item-qty-rate">
+					<div class="item-qty"><span>${item_data.qty || 0} ${item_data.uom}</span></div>
+					<div class="item-rate-amount">
+						<div class="item-rate">${format_currency(item_data.amount, currency)}</div>
+						<div class="item-amount">${format_currency(item_data.rate, currency)}</div>
+					</div>
+				</div>`;
+		}
+
+		return `
+			<div class="item-qty-rate">
+				<div class="item-qty"><span>${item_data.qty || 0} ${item_data.uom}</span></div>
+				<div class="item-rate-amount">
+					<div class="item-rate">${format_currency(item_data.rate, currency)}</div>
+				</div>
+			</div>`;
+	}
+
+	set_dynamic_rate_header_width() {
+		const rate_cols = Array.from(this.$cart_items_wrapper.find(".item-rate-amount"));
+		this.$cart_header.find(".rate-amount-header").css("width", "");
+		this.$cart_items_wrapper.find(".item-rate-amount").css("width", "");
+		let max_width = rate_cols.reduce((max_width, elm) => {
+			if ($(elm).width() > max_width) max_width = $(elm).width();
+			return max_width;
+		}, 0);
+
+		max_width += 1;
+		if (max_width == 1) max_width = "";
+
+		this.$cart_header.find(".rate-amount-header").css("width", max_width);
+		this.$cart_items_wrapper.find(".item-rate-amount").css("width", max_width);
+	}
+
+	refresh_item_qty_rate_in_row(item_data) {
+		const currency = this.events.get_frm().doc.currency;
+		const $item_to_update = this.get_cart_item(item_data);
+		if (!$item_to_update.length) return;
+
+		$item_to_update
+			.find("> .item-qty-rate")
+			.replaceWith(this.get_item_qty_rate_html(item_data, currency));
+		this.set_dynamic_rate_header_width();
 	}
 
 	handle_broken_image($img) {
@@ -1292,6 +1322,12 @@ erpnext.PointOfSale.ItemCart = class {
 	attach_refresh_field_event(frm) {
 		$(frm.wrapper).off("refresh-fields");
 		$(frm.wrapper).on("refresh-fields", () => {
+			if (this._suppress_cart_refresh) {
+				this.update_totals_section(frm);
+				return;
+			}
+
+			const scroll_top = this.$cart_items_wrapper.scrollTop();
 			if (frm.doc.items.length) {
 				this.$cart_items_wrapper.html("");
 				frm.doc.items.forEach((item) => {
@@ -1299,6 +1335,7 @@ erpnext.PointOfSale.ItemCart = class {
 				});
 			}
 			this.update_totals_section(frm);
+			this.$cart_items_wrapper.scrollTop(scroll_top);
 		});
 	}
 

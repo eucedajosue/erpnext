@@ -1306,7 +1306,10 @@ erpnext.PointOfSale.Controller = class {
 	}
 
 	async on_cart_update(args) {
-		frappe.dom.freeze();
+		const quick_selector_add = args?.field === "qty" && args?.value === "+1";
+		const should_freeze = !quick_selector_add;
+		if (should_freeze) frappe.dom.freeze();
+		if (quick_selector_add && this.cart) this.cart._suppress_cart_refresh = true;
 		if (this.frm.doc.set_warehouse !== this.settings.warehouse) {
 			this.frm.set_value("set_warehouse", this.settings.warehouse);
 		}
@@ -1399,7 +1402,12 @@ erpnext.PointOfSale.Controller = class {
 		} catch (error) {
 			console.log(error);
 		} finally {
-			frappe.dom.unfreeze();
+			if (should_freeze) frappe.dom.unfreeze();
+			if (quick_selector_add && this.cart) {
+				setTimeout(() => {
+					this.cart._suppress_cart_refresh = false;
+				}, 0);
+			}
 			return item_row; // eslint-disable-line no-unsafe-finally
 		}
 	}
