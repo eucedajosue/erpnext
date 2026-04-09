@@ -136,6 +136,7 @@ erpnext.PointOfSale.Payment = class {
 		});
 
 		this.numpad_value = "";
+		this._numpad_seed_value = null;
 	}
 
 	on_numpad_clicked($btn, from_numpad = true) {
@@ -161,6 +162,7 @@ erpnext.PointOfSale.Payment = class {
 			const number_format_details = get_number_format_info(frappe.sys_defaults.number_format);
 			const precision = frappe.sys_defaults.currency_precision || number_format_details.precision;
 			this.numpad_value = (exact_amount * 10 ** precision).toFixed(0).toString();
+			this._numpad_seed_value = this.numpad_value;
 			return;
 		}
 
@@ -175,9 +177,14 @@ erpnext.PointOfSale.Payment = class {
 
 		const number_format_details = get_number_format_info(frappe.sys_defaults.number_format);
 		const precision = frappe.sys_defaults.currency_precision || number_format_details.precision;
-		this.numpad_value = "0";
-		if (this.selected_mode.get_value()) {
-			this.numpad_value = (this.selected_mode.get_value() * 10 ** precision).toFixed(0).toString();
+		if (this._numpad_seed_value !== null) {
+			this.numpad_value = this._numpad_seed_value;
+			this._numpad_seed_value = null;
+		} else {
+			this.numpad_value = "0";
+			if (this.selected_mode.get_value()) {
+				this.numpad_value = (this.selected_mode.get_value() * 10 ** precision).toFixed(0).toString();
+			}
 		}
 
 		let valid_input = true;
@@ -284,13 +291,19 @@ erpnext.PointOfSale.Payment = class {
 				const number_format_details = get_number_format_info(frappe.sys_defaults.number_format);
 				const precision = frappe.sys_defaults.currency_precision || number_format_details.precision;
 				me.numpad_value = (exact_amount * 10 ** precision).toFixed(0).toString();
+				me._numpad_seed_value = me.numpad_value;
 			} else if ($btn.data("clear") || $btn.hasClass("clear-shortcut")) {
 				control.set_value(0);
 				me.numpad_value = "0";
+				me._numpad_seed_value = "0";
 			} else {
 				const amount = flt($btn.data("amount")) || 0;
 				const current = flt(control.get_value()) || 0;
-				control.set_value(current + amount);
+				const next_amount = current + amount;
+				control.set_value(next_amount);
+				const number_format_details = get_number_format_info(frappe.sys_defaults.number_format);
+				const precision = frappe.sys_defaults.currency_precision || number_format_details.precision;
+				me._numpad_seed_value = (next_amount * 10 ** precision).toFixed(0).toString();
 			}
 		});
 

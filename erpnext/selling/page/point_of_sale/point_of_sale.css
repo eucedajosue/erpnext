@@ -74,6 +74,53 @@
 	color: #1f2937;
 }
 
+@media (min-width: 769px) {
+	.point-of-sale-app .payment-container .payment-split-container .payment-container-right {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.point-of-sale-app .payment-container .payment-split-container .payment-container-right .fields-numpad-container {
+		height: 100%;
+		justify-content: flex-start;
+		gap: 12px;
+	}
+
+	.point-of-sale-app .payment-container .payment-split-container .payment-container-right .fields-numpad-container .fields-section {
+		flex: 0;
+	}
+
+	.point-of-sale-app .payment-container .payment-split-container .payment-container-right .fields-numpad-container .number-pad {
+		position: static !important;
+		right: auto !important;
+		display: flex !important;
+		flex: 1;
+		align-items: stretch;
+		width: 100%;
+		min-height: 0;
+	}
+
+	.point-of-sale-app .payment-container .payment-split-container .payment-container-right .fields-numpad-container .number-pad .numpad-container {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-auto-rows: minmax(68px, 1fr);
+		align-content: stretch;
+		width: 100%;
+		height: 100%;
+		gap: 12px;
+		margin: 0;
+		padding: 0;
+		background: transparent;
+	}
+
+	.point-of-sale-app .payment-container .payment-split-container .payment-container-right .fields-numpad-container .number-pad .numpad-container > .numpad-btn {
+		height: auto;
+		min-height: 68px;
+		font-size: 22px;
+		font-weight: 600;
+	}
+}
+
 @media (max-width: 768px) {
 	.point-of-sale-app .items-selector .item-wrapper {
 		position: relative;
