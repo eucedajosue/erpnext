@@ -395,6 +395,122 @@ def quotation_query(doctype, txt, searchfield, start, page_len, filters):
 
 
 @frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def sales_invoice_query(doctype, txt, searchfield, start, page_len, filters):
+	filters = frappe._dict(filters or {})
+
+	si_filters = {
+		"docstatus": 1,
+		"is_return": 0,
+	}
+
+	if filters.get("company"):
+		si_filters["company"] = filters.company
+
+	if filters.get("customer"):
+		si_filters["customer"] = filters.customer
+
+	if filters.get("from_date") and filters.get("to_date"):
+		si_filters["posting_date"] = ["between", [filters.from_date, filters.to_date]]
+	elif filters.get("from_date"):
+		si_filters["posting_date"] = [">=", filters.from_date]
+	elif filters.get("to_date"):
+		si_filters["posting_date"] = ["<=", filters.to_date]
+
+	invoices = frappe.get_all(
+		"Sales Invoice",
+		filters=si_filters,
+		or_filters={
+			"name": ["like", f"%{txt}%"],
+			"customer": ["like", f"%{txt}%"],
+			"customer_name": ["like", f"%{txt}%"],
+		},
+		fields=["name", "customer_name", "grand_total", "currency", "posting_date"],
+		start=start,
+		page_length=page_len,
+		order_by="posting_date desc, modified desc",
+	)
+
+	return [
+		(
+			invoice.name,
+			invoice.customer_name,
+			f"{frappe._('Total')}: {frappe.format_value(invoice.grand_total, {'fieldtype': 'Currency', 'options': invoice.currency})} | {frappe._('Date')}: {frappe.format(invoice.posting_date, {'fieldtype': 'Date'})}",
+		)
+		for invoice in invoices
+	]
+
+
+@frappe.whitelist()
+def make_sales_invoice_from_sales_invoice(source_name):
+	source_invoice = frappe.get_doc("Sales Invoice", source_name)
+
+	if source_invoice.docstatus != 1:
+		frappe.throw(frappe._("Only submitted Sales Invoices can be used as a source."))
+
+	target_invoice = frappe.new_doc("Sales Invoice")
+	target_invoice.customer = source_invoice.customer
+	target_invoice.customer_name = source_invoice.customer_name
+	target_invoice.company = source_invoice.company
+	target_invoice.currency = source_invoice.currency
+	target_invoice.selling_price_list = source_invoice.selling_price_list
+	target_invoice.conversion_rate = source_invoice.conversion_rate
+	target_invoice.taxes_and_charges = source_invoice.taxes_and_charges
+
+	for item in source_invoice.get("items") or []:
+		target_invoice.append(
+			"items",
+			{
+				"item_code": item.item_code,
+				"item_name": item.item_name,
+				"description": item.description,
+				"qty": item.qty,
+				"uom": item.uom,
+				"stock_uom": item.stock_uom,
+				"conversion_factor": item.conversion_factor,
+				"rate": item.rate,
+				"price_list_rate": item.price_list_rate,
+				"discount_percentage": item.discount_percentage,
+				"warehouse": item.warehouse,
+				"income_account": item.income_account,
+				"cost_center": item.cost_center,
+				"item_tax_template": item.item_tax_template,
+				"batch_no": item.batch_no,
+				"serial_no": item.serial_no,
+				"custom_sales_person": item.custom_sales_person,
+			}
+		)
+
+	for tax in source_invoice.get("taxes") or []:
+		target_invoice.append(
+			"taxes",
+			{
+				"charge_type": tax.charge_type,
+				"account_head": tax.account_head,
+				"description": tax.description,
+				"rate": tax.rate,
+				"cost_center": tax.cost_center,
+			}
+		)
+
+	for member in source_invoice.get("sales_team") or []:
+		target_invoice.append(
+			"sales_team",
+			{
+				"sales_person": member.sales_person,
+				"allocated_percentage": member.allocated_percentage,
+				"commission_rate": member.commission_rate,
+				"incentives": member.incentives,
+			}
+		)
+
+	target_invoice.run_method("set_missing_values")
+	target_invoice.run_method("calculate_taxes_and_totals")
+
+	return target_invoice
+
+
+@frappe.whitelist()
 def make_quotation_from_cart(cart_doc):
 	cart_doc = frappe.parse_json(cart_doc) or {}
 

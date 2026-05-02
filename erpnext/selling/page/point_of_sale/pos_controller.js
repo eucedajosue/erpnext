@@ -275,6 +275,12 @@ erpnext.PointOfSale.Controller = class {
 			"Ctrl+Shift+I"
 		);
 		this.page.add_menu_item(
+			__("Create Invoice from Sales Invoice"),
+			this.open_sales_invoice_dialog.bind(this),
+			false,
+			"Ctrl+Shift+V"
+		);
+		this.page.add_menu_item(
 			__("Create Quotation"),
 			this.create_quotation_from_pos.bind(this),
 			false,
@@ -328,6 +334,106 @@ erpnext.PointOfSale.Controller = class {
 				await this.load_sales_order_on_pos(sales_order);
 			},
 		});
+
+		dialog.show();
+	}
+
+	open_sales_invoice_dialog() {
+		if (this.settings.frm_doctype !== "Sales Invoice") {
+			frappe.msgprint({
+				title: __("Not Supported"),
+				indicator: "orange",
+				message: __(
+					"This action requires POS invoice type to be Sales Invoice in POS Settings."
+				),
+			});
+			return;
+		}
+
+		const dialog = new frappe.ui.Dialog({
+			title: __("Create Invoice from Sales Invoice"),
+			fields: [
+				{
+					fieldtype: "Link",
+					label: __("Customer"),
+					fieldname: "customer",
+					options: "Customer",
+					default: this.frm?.doc?.customer || "",
+					onchange: () => dialog.set_value("sales_invoice", ""),
+				},
+				{
+					fieldtype: "Date",
+					label: __("From Date"),
+					fieldname: "from_date",
+					onchange: () => {
+						dialog.set_value("sales_invoice", "");
+						validate_date_range(true);
+					},
+				},
+				{
+					fieldtype: "Date",
+					label: __("To Date"),
+					fieldname: "to_date",
+					onchange: () => {
+						dialog.set_value("sales_invoice", "");
+						validate_date_range(true);
+					},
+				},
+				{
+					fieldtype: "Link",
+					label: __("Sales Invoice"),
+					fieldname: "sales_invoice",
+					options: "Sales Invoice",
+					reqd: 1,
+					get_query: () => {
+						const filters = {
+							docstatus: 1,
+							company: this.company,
+						};
+						const customer = dialog.get_value("customer");
+						if (customer) {
+							filters.customer = customer;
+						}
+						const from_date = dialog.get_value("from_date");
+						if (from_date) {
+							filters.from_date = from_date;
+						}
+						const to_date = dialog.get_value("to_date");
+						if (to_date) {
+							filters.to_date = to_date;
+						}
+						return {
+							query: "erpnext.selling.page.point_of_sale.point_of_sale.sales_invoice_query",
+							filters,
+						};
+					},
+				},
+			],
+			primary_action_label: __("Load"),
+			primary_action: async ({ sales_invoice }) => {
+				if (!validate_date_range(true)) {
+					return;
+				}
+				dialog.hide();
+				await this.load_sales_invoice_on_pos(sales_invoice);
+			},
+		});
+
+		const validate_date_range = (show_message = false) => {
+			const from_date = dialog.get_value("from_date");
+			const to_date = dialog.get_value("to_date");
+			if (from_date && to_date && from_date > to_date) {
+				if (show_message) {
+					frappe.msgprint({
+						title: __("Invalid Date Range"),
+						indicator: "orange",
+						message: __("From Date cannot be greater than To Date."),
+					});
+				}
+				return false;
+			}
+			return true;
+		};
 
 		dialog.show();
 	}
@@ -475,6 +581,60 @@ erpnext.PointOfSale.Controller = class {
 				title: __("Unable to load Quotation"),
 				indicator: "red",
 				message: error?.message || __("Could not create invoice from this Quotation."),
+			});
+		} finally {
+			frappe.dom.unfreeze();
+		}
+	}
+
+	async load_sales_invoice_on_pos(sales_invoice) {
+		try {
+			frappe.dom.freeze();
+			this.source_quotation = null;
+			await this.make_invoice_frm("Sales Invoice");
+
+			const response = await frappe.call({
+				method:
+					"erpnext.selling.page.point_of_sale.point_of_sale.make_sales_invoice_from_sales_invoice",
+				args: {
+					source_name: sales_invoice,
+				},
+			});
+
+			if (!response.message) return;
+
+			frappe.model.sync(response.message);
+			this.frm.refresh(response.message.name);
+			this.frm.doc.__onload = this.frm.doc.__onload || {};
+			this.frm.doc.__onload.load_after_mapping = true;
+			this.frm.doc.is_pos = 1;
+			this.frm.doc.is_created_using_pos = 1;
+			this.frm.doc.pos_profile = this.pos_profile;
+			this.frm.doc.set_warehouse = this.settings.warehouse;
+			await this.set_pos_profile_data();
+
+			const sales_person = this.cart?.si_sales_person_field?.get_value?.() || "";
+			if (sales_person) {
+				(this.frm.doc.items || []).forEach((item) => {
+					if (!item.custom_sales_person) {
+						item.custom_sales_person = sales_person;
+					}
+				});
+			}
+
+			this.cart.load_invoice();
+			this.toggle_recent_order_list(false);
+			this.toggle_components(true);
+
+			frappe.show_alert({
+				indicator: "green",
+				message: __("Sales Invoice {0} loaded into POS invoice", [sales_invoice]),
+			});
+		} catch (error) {
+			frappe.msgprint({
+				title: __("Unable to load Sales Invoice"),
+				indicator: "red",
+				message: error?.message || __("Could not create invoice from this Sales Invoice."),
 			});
 		} finally {
 			frappe.dom.unfreeze();
