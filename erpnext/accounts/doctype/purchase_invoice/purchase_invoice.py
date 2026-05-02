@@ -203,6 +203,7 @@ class PurchaseInvoice(BuyingController):
 		taxes_and_charges_deducted: DF.Currency
 		tc_name: DF.Link | None
 		terms: DF.TextEditor | None
+		title: DF.Data | None
 		to_date: DF.Date | None
 		total: DF.Currency
 		total_advance: DF.Currency
@@ -331,9 +332,6 @@ class PurchaseInvoice(BuyingController):
 				self.remarks = _("Against Supplier Invoice {0}").format(self.bill_no)
 				if self.bill_date:
 					self.remarks += " " + _("dated {0}").format(formatdate(self.bill_date))
-
-			else:
-				self.remarks = _("No Remarks")
 
 	def set_missing_values(self, for_validate=False):
 		if not self.credit_to:
