@@ -726,16 +726,24 @@ def get_item_tax_template(ctx, item=None, out: ItemDetails | None = None):
 		item_tax_template = _get_item_tax_template(ctx, item.taxes, out)
 
 	if not item_tax_template:
-		item_group = item.item_group
-		while item_group and not item_tax_template:
-			item_group_doc = frappe.get_cached_doc("Item Group", item_group)
-			item_tax_template = _get_item_tax_template(ctx, item_group_doc.taxes, out)
-			item_group = item_group_doc.parent_item_group
+		item_tax_template = _get_item_tax_template_from_item_group(ctx, item.item_group, out)
 
 	if out and ctx.get("child_doctype") and item_tax_template:
 		out.update(get_fetch_values(ctx.get("child_doctype"), "item_tax_template", item_tax_template))
 
 	return item_tax_template
+
+
+def _get_item_tax_template_from_item_group(ctx, item_group, out=None):
+	from frappe.utils.nestedset import get_ancestors_of
+
+	ancestors = get_ancestors_of("Item Group", item_group)
+	for group in [item_group, *ancestors]:
+		group_doc = frappe.get_cached_doc("Item Group", group)
+		item_tax_template = _get_item_tax_template(ctx, group_doc.taxes, out)
+		if item_tax_template:
+			return item_tax_template
+	return None
 
 
 @erpnext.normalize_ctx_input(ItemDetailsCtx)
@@ -1117,10 +1125,11 @@ def insert_item_price(ctx: ItemDetailsCtx):
 				currency=ctx.currency,
 				uom=ctx.stock_uom,
 				price_list=ctx.price_list,
+				valid_from=transaction_date,
 			)
 			item_price.insert()
 			frappe.msgprint(
-				_("Item Price Added for {0} in Price List {1}").format(
+				_("Item Price added for {0} in Price List - {1}").format(
 					get_link_to_form("Item", ctx.item_code), ctx.price_list
 				),
 				alert=True,
@@ -1139,13 +1148,15 @@ def insert_item_price(ctx: ItemDetailsCtx):
 				"currency": ctx.currency,
 				"price_list_rate": price_list_rate,
 				"uom": ctx.stock_uom,
+				"valid_from": transaction_date,
 			}
 		)
 		item_price.insert()
 		frappe.msgprint(
-			_("Item Price added for {0} in Price List {1}").format(
+			_("Item Price added for {0} in Price List - {1}").format(
 				get_link_to_form("Item", ctx.item_code), ctx.price_list
-			)
+			),
+			alert=True,
 		)
 
 

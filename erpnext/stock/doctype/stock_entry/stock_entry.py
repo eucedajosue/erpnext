@@ -243,7 +243,6 @@ class StockEntry(StockController, SubcontractingInwardController):
 		self.set_transfer_qty()
 		self.validate_uom_is_integer("uom", "qty")
 		self.validate_uom_is_integer("stock_uom", "transfer_qty")
-		self.validate_warehouse()
 		self.validate_warehouse_of_sabb()
 		self.validate_work_order()
 		self.validate_source_stock_entry()
@@ -259,6 +258,7 @@ class StockEntry(StockController, SubcontractingInwardController):
 			else:
 				self.validate_job_card_fg_item()
 
+		self.validate_warehouse()
 		self.validate_with_material_request()
 		self.validate_batch()
 		self.validate_inspection()
@@ -383,6 +383,9 @@ class StockEntry(StockController, SubcontractingInwardController):
 	def _set_serial_batch_for_disassembly_from_available_materials(self):
 		available_materials = get_available_materials(self.work_order, self)
 		for row in self.items:
+			if row.serial_no or row.batch_no or row.serial_and_batch_bundle:
+				continue
+
 			warehouse = row.s_warehouse or row.t_warehouse
 			materials = available_materials.get((row.item_code, warehouse))
 			if not materials:
@@ -849,16 +852,15 @@ class StockEntry(StockController, SubcontractingInwardController):
 				else:
 					frappe.throw(_("Target warehouse is mandatory for row {0}").format(d.idx))
 
-			if self.purpose == "Manufacture":
-				if has_bom:
-					if d.is_finished_item or d.type or d.is_legacy_scrap_item:
-						d.s_warehouse = None
-						if not d.t_warehouse:
-							frappe.throw(_("Target warehouse is mandatory for row {0}").format(d.idx))
-					else:
-						d.t_warehouse = None
-						if not d.s_warehouse:
-							frappe.throw(_("Source warehouse is mandatory for row {0}").format(d.idx))
+			if self.purpose in ["Manufacture", "Repack"]:
+				if d.is_finished_item or d.type or d.is_legacy_scrap_item:
+					d.s_warehouse = None
+					if not d.t_warehouse:
+						frappe.throw(_("Target warehouse is mandatory for row {0}").format(d.idx))
+				else:
+					d.t_warehouse = None
+					if not d.s_warehouse:
+						frappe.throw(_("Source warehouse is mandatory for row {0}").format(d.idx))
 
 			if self.purpose == "Disassemble":
 				if has_bom:

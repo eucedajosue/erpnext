@@ -610,6 +610,7 @@ class SalesOrder(SellingController):
 		self.update_subcontracting_order_status()
 		self.notify_update()
 		clear_doctype_notifications(self)
+		self.update_blanket_order()
 
 	def update_subcontracting_order_status(self):
 		from erpnext.subcontracting.doctype.subcontracting_inward_order.subcontracting_inward_order import (
@@ -683,18 +684,12 @@ class SalesOrder(SellingController):
 
 		for item in self.items:
 			if item.delivered_by_supplier:
-				item_delivered_qty = frappe.db.sql(
-					"""select sum(qty)
-					from `tabPurchase Order Item` poi, `tabPurchase Order` po
-					where poi.sales_order_item = %s
-						and poi.item_code = %s
-						and poi.parent = po.name
-						and po.docstatus = 1
-						and po.status = 'Delivered'""",
-					(item.name, item.item_code),
-				)
-
-				item_delivered_qty = item_delivered_qty[0][0] if item_delivered_qty else 0
+				item_delivered_qty = frappe.get_all(
+					"Purchase Order Item",
+					{"sales_order_item": item.name, "docstatus": 1},
+					[{"SUM": "received_qty", "AS": "received_qty"}],
+					pluck="received_qty",
+				)[0]
 				item.db_set("delivered_qty", flt(item_delivered_qty), update_modified=False)
 
 			delivered_qty += min(item.delivered_qty, item.qty)
@@ -1627,7 +1622,7 @@ def make_purchase_order(source_name, selected_items=None, target_doc=None):
 		if default_payment_terms:
 			target.payment_terms_template = default_payment_terms
 
-		if any(item.delivered_by_supplier == 1 for item in source.items):
+		if any(item.delivered_by_supplier for item in target.items):
 			if source.shipping_address_name:
 				target.shipping_address = source.shipping_address_name
 				target.shipping_address_display = source.shipping_address
