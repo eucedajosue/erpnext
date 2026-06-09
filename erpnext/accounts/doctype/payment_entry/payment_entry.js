@@ -581,6 +581,24 @@ frappe.ui.form.on("Payment Entry", {
 									frm.doc.paid_to_account_currency,
 									company_currency
 								),
+							() => {
+								if (
+									frm.doc.party_type === "Customer" &&
+									frm.doc.payment_type === "Receive"
+								) {
+									const today = frappe.datetime.get_today();
+									const default_filters = {
+										allocate_payment_amount: 1,
+									};
+									frappe.flags.allocate_payment_amount = 1;
+									frm.events.get_outstanding_documents(
+										frm,
+										default_filters,
+										true,
+										false
+									);
+								}
+							},
 						]);
 					}
 				},
