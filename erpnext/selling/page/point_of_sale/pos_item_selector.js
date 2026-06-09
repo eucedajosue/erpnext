@@ -118,10 +118,10 @@ erpnext.PointOfSale.ItemSelector = class {
 
 	render_item_list_column_header() {
 		return `<div class="list-column">
-			<div class="column-name">Name</div>
-			<div class="column-price">Price</div>
-			<div class="column-uom">UOM</div>
-			<div class="column-qty-available">Quantity Available</div>
+			<div class="column-name">${__("Name")}</div>
+			<div class="column-price">${__("Price")}</div>
+			<div class="column-uom">${__("UOM")}</div>
+			<div class="column-qty-available">${__("Quantity Available")}</div>
 		</div>`;
 	}
 
@@ -156,14 +156,14 @@ erpnext.PointOfSale.ItemSelector = class {
 							<img
 								onerror="cur_pos.item_selector.handle_broken_image(this)"
 								class="item-img" src="${item_image}"
-								alt="${item.item_name}"
+								alt="${item_name}"
 							>
 						</div>`;
 			} else {
 				return `<div class="item-qty-pill">
 							<span class="indicator-pill whitespace-nowrap ${indicator_color}">${qty_to_display}</span>
 						</div>
-						<div class="item-display abbr">${frappe.get_abbr(item.item_name)}</div>`;
+						<div class="item-display abbr">${frappe.get_abbr(item_name)}</div>`;
 			}
 		}
 
@@ -180,7 +180,7 @@ erpnext.PointOfSale.ItemSelector = class {
 
 				<div class="item-detail">
 					<div class="item-name">
-						${!me.hide_images ? frappe.ellipsis(item.item_name, 18) : item.item_name}
+						${!me.hide_images ? frappe.ellipsis(item_name, 18) : item_name}
 					</div>
 					${
 						!me.hide_images
@@ -195,7 +195,11 @@ erpnext.PointOfSale.ItemSelector = class {
 								</div>
 							</div>`
 							: `
-							<div class="item-price">${format_currency(price_list_rate, item.currency, precision) || 0}</div>
+							<div class="item-price">${
+								frappe.utils.escape_html(
+									format_currency(price_list_rate, item.currency, precision)
+								) || 0
+							}</div>
 							<div class="item-uom">${uom}</div>
 							<div class="item-qty-available">${qty_to_display || "Non stock item"}</div>
 							`
@@ -255,7 +259,7 @@ erpnext.PointOfSale.ItemSelector = class {
 	}
 
 	handle_broken_image($img) {
-		const item_abbr = $($img).attr("alt");
+		const item_abbr = frappe.utils.escape_html($($img).attr("alt"));
 		$($img).parent().replaceWith(`<div class="item-display abbr">${item_abbr}</div>`);
 	}
 

@@ -286,7 +286,7 @@ erpnext.PointOfSale.ItemCart = class {
 				me.$totals_section.find(".edit-cart-btn").click();
 			}
 
-			const item_row_name = unescape($cart_item.attr("data-row-name"));
+			const item_row_name = $cart_item.attr("data-row-name");
 			me.events.cart_item_clicked({ name: item_row_name });
 			this.numpad_value = "";
 		});
@@ -674,7 +674,7 @@ erpnext.PointOfSale.ItemCart = class {
 					<div class="customer-display">
 						${this.get_customer_image()}
 						<div class="customer-name-desc">
-							<div class="customer-name">${customer_name}</div>
+							<div class="customer-name">${frappe.utils.escape_html(customer_name)}</div>
 							${get_customer_description()}
 						</div>
 						<div class="customer-actions">
@@ -702,11 +702,13 @@ erpnext.PointOfSale.ItemCart = class {
 			if (!email_id && !mobile_no) {
 				return `<div class="customer-desc">${__("Click to add email / phone")}</div>`;
 			} else if (email_id && !mobile_no) {
-				return `<div class="customer-desc">${email_id}</div>`;
+				return `<div class="customer-desc">${frappe.utils.escape_html(email_id)}</div>`;
 			} else if (mobile_no && !email_id) {
-				return `<div class="customer-desc">${mobile_no}</div>`;
+				return `<div class="customer-desc">${frappe.utils.escape_html(mobile_no)}</div>`;
 			} else {
-				return `<div class="customer-desc">${email_id} - ${mobile_no}</div>`;
+				return `<div class="customer-desc">${frappe.utils.escape_html(
+					email_id
+				)} - ${frappe.utils.escape_html(mobile_no)}</div>`;
 			}
 		}
 	}
@@ -714,9 +716,13 @@ erpnext.PointOfSale.ItemCart = class {
 	get_customer_image() {
 		const { customer, image } = this.customer_info || {};
 		if (image) {
-			return `<div class="customer-image"><img src="${image}" alt="${image}"></div>`;
+			return `<div class="customer-image"><img src="${frappe.utils.escape_html(
+				image
+			)}" alt="${frappe.utils.escape_html(image)}"></div>`;
 		} else {
-			return `<div class="customer-image customer-abbr">${frappe.get_abbr(customer)}</div>`;
+			return `<div class="customer-image customer-abbr">${frappe.utils.escape_html(
+				frappe.get_abbr(customer)
+			)}</div>`;
 		}
 	}
 
@@ -794,7 +800,7 @@ erpnext.PointOfSale.ItemCart = class {
 				.map((t) => {
 					if (t.tax_amount_after_discount_amount == 0.0) return;
 					return `<div class="tax-row">
-					<div class="tax-label">${t.description}</div>
+					<div class="tax-label">${frappe.utils.escape_html(t.description)}</div>
 					<div class="tax-value">${format_currency(t.tax_amount_after_discount_amount, currency)}</div>
 				</div>`;
 				})
@@ -806,8 +812,9 @@ erpnext.PointOfSale.ItemCart = class {
 	}
 
 	get_cart_item({ name }) {
-		const item_selector = `.cart-item-wrapper[data-row-name="${escape(name)}"]`;
-		return this.$cart_items_wrapper.find(item_selector);
+		return this.$cart_items_wrapper.find(".cart-item-wrapper").filter(function () {
+			return $(this).attr("data-row-name") === name;
+		});
 	}
 
 	get_item_from_frm(item) {
@@ -843,7 +850,9 @@ erpnext.PointOfSale.ItemCart = class {
 
 		if (!$item_to_update.length) {
 			this.$cart_items_wrapper.append(
-				`<div class="cart-item-wrapper" data-row-name="${escape(item_data.name)}"></div>
+				`<div class="cart-item-wrapper" data-row-name="${frappe.utils.escape_html(
+					item_data.name
+				)}"></div>
 				<div class="seperator"></div>`
 			);
 			$item_to_update = this.get_cart_item(item_data);
@@ -860,7 +869,7 @@ erpnext.PointOfSale.ItemCart = class {
 			</div>${get_item_image_html()}
 			<div class="item-name-desc">
 				<div class="item-name">
-					${item_data.item_name}
+					${frappe.utils.escape_html(item_data.item_name)}
 				</div>
         		${get_sales_person_html(item_data)}
 				${get_qty_actions_html()}
@@ -952,13 +961,13 @@ erpnext.PointOfSale.ItemCart = class {
 	}
 
 	handle_broken_image($img) {
-		const item_abbr = $($img).attr("alt");
+		const item_abbr = frappe.utils.escape_html($($img).attr("alt"));
 		$($img).parent().replaceWith(`<div class="item-image item-abbr">${item_abbr}</div>`);
 	}
 
 	update_selector_value_in_cart_item(selector, value, item) {
 		const $item_to_update = this.get_cart_item(item);
-		$item_to_update.attr(`data-${selector}`, escape(value));
+		$item_to_update.attr(`data-${selector}`, value);
 	}
 
 	toggle_checkout_btn(show_checkout) {
@@ -1159,8 +1168,8 @@ erpnext.PointOfSale.ItemCart = class {
 				<div class="customer-display">
 					${this.get_customer_image()}
 					<div class="customer-name-desc">
-						<div class="customer-name">${customer_name}</div>
-						<div class="customer-desc">${customer}</div>
+						<div class="customer-name">${frappe.utils.escape_html(customer_name)}</div>
+						<div class="customer-desc">${frappe.utils.escape_html(customer)}</div>
 					</div>
 				</div>
 				<div class="customer-fields-container">
@@ -1247,6 +1256,7 @@ erpnext.PointOfSale.ItemCart = class {
 						customer: current_customer,
 						value: this.value,
 					},
+					freeze: true,
 					callback: (r) => {
 						if (!r.exc) {
 							me.customer_info[this.df.fieldname] = this.value;
@@ -1300,9 +1310,11 @@ erpnext.PointOfSale.ItemCart = class {
 					};
 
 					transaction_container.append(
-						`<div class="invoice-wrapper" data-invoice-name="${escape(invoice.name)}">
+						`<div class="invoice-wrapper" data-invoice-name="${frappe.utils.escape_html(
+							invoice.name
+						)}">
 						<div class="invoice-name-date">
-							<div class="invoice-name">${invoice.name}</div>
+							<div class="invoice-name">${frappe.utils.escape_html(invoice.name)}</div>
 							<div class="invoice-date">${posting_datetime}</div>
 						</div>
 						<div class="invoice-total-status">
@@ -1310,7 +1322,7 @@ erpnext.PointOfSale.ItemCart = class {
 								${format_currency(invoice.grand_total, invoice.currency, frappe.sys_defaults.currency_precision) || 0}
 							</div>
 							<div class="invoice-status">
-								<span class="indicator-pill whitespace-nowrap ${indicator_color[invoice.status]}">
+								<span class="indicator-pill whitespace-nowrap ${indicator_color[invoice.status] || ""}">
 									<span>${__(invoice.status)}</span>
 								</span>
 							</div>
