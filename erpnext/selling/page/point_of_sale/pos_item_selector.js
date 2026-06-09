@@ -129,6 +129,7 @@ erpnext.PointOfSale.ItemSelector = class {
 		const me = this;
 		// eslint-disable-next-line no-unused-vars
 		const { item_image, serial_no, batch_no, barcode, actual_qty, uom, price_list_rate, has_serial_no, has_batch_no } = item;
+		const item_name = item.item_name || item.item_code || __("Unnamed Item");
 		const precision = flt(price_list_rate, 2) % 1 != 0 ? 2 : 0;
 		let indicator_color;
 		let qty_to_display = actual_qty;
