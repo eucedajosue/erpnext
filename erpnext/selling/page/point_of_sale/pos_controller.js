@@ -255,8 +255,9 @@ erpnext.PointOfSale.Controller = class {
 			const pos_profile = this.pos_profile;
 			// Use this.settings which already contains the POS Profile data loaded in prepare_app_defaults
 			const account = this.settings.account_for_change_amount || "";
-			
-			const url = `${window.location.origin}/app/payment-entry/new?payment_type=${payment_type}${account ? `&mode_of_payment=${encodeURIComponent(account)}` : ""}${pos_profile ? `&pos_profile=${encodeURIComponent(pos_profile)}` : ""}`;
+			const custom_motivo = payment_type === "Receive" ? "Pago a cuenta" : "";
+
+			const url = `${window.location.origin}/app/payment-entry/new?payment_type=${payment_type}${account ? `&mode_of_payment=${encodeURIComponent(account)}` : ""}${pos_profile ? `&pos_profile=${encodeURIComponent(pos_profile)}` : ""}${custom_motivo ? `&custom_motivo=${encodeURIComponent(custom_motivo)}` : ""}`;
 			window.open(url, "_blank");
 		};
 
