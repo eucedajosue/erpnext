@@ -669,7 +669,9 @@ $.extend(erpnext.item, {
 	render_item_prices: function (frm) {
 		if (frm.doc.__islocal) return;
 		const requested_item = frm.doc.name;
-		const container = frm.fields_dict["prices_html"].$wrapper;
+		const price_field = frm.fields_dict["prices_html"];
+		if (!price_field || !price_field.$wrapper) return;
+		const container = price_field.$wrapper;
 
 		container.html(
 			`<div class="text-muted text-center" style="padding: 20px;">${__("Loading...")}</div>`
