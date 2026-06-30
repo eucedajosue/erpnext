@@ -916,6 +916,16 @@ class update_entries_after:
 				and not has_dimensions
 			):
 				# assert
+				if (
+					sle.voucher_detail_no
+					and self.repost_doc
+					and self.repost_doc.get("recalculate_valuation_rate")
+				):
+					source_rate = frappe.get_cached_value(
+						"Stock Reconciliation Item", sle.voucher_detail_no, "valuation_rate"
+					)
+					if source_rate:
+						sle.valuation_rate = source_rate
 				self.wh_data.valuation_rate = sle.valuation_rate
 				self.wh_data.qty_after_transaction = sle.qty_after_transaction
 				self.wh_data.stock_value = flt(self.wh_data.qty_after_transaction) * flt(
@@ -1196,6 +1206,7 @@ class update_entries_after:
 			sle.recalculate_rate
 			or self.has_landed_cost_based_on_pi(sle)
 			or (sle.voucher_type == "Stock Entry" and sle.actual_qty > 0 and is_repack_entry(sle.voucher_no))
+			or (self.repost_doc and self.repost_doc.get("recalculate_valuation_rate"))
 		):
 			rate = self.get_incoming_outgoing_rate_from_transaction(sle)
 

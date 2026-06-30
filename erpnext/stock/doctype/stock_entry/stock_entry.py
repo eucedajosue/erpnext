@@ -1236,10 +1236,12 @@ class StockEntry(StockController, SubcontractingInwardController):
 		if self.purpose not in ["Manufacture", "Material Transfer for Manufacture"]:
 			return
 
-		if not frappe.db.get_single_value("Manufacturing Settings", "validate_components_quantities_per_bom"):
+		if not self.fg_completed_qty:
+			if self.work_order and self.purpose == "Material Transfer for Manufacture":
+				self._validate_no_excess_transfer()
 			return
 
-		if not self.fg_completed_qty:
+		if not frappe.db.get_single_value("Manufacturing Settings", "validate_components_quantities_per_bom"):
 			return
 
 		raw_materials = self.get_bom_raw_materials(self.fg_completed_qty)
@@ -1265,6 +1267,59 @@ class StockEntry(StockController, SubcontractingInwardController):
 						get_link_to_form("BOM", self.bom_no), frappe.bold(item_code)
 					),
 					title=_("Missing Item"),
+				)
+
+	def _validate_no_excess_transfer(self):
+		if self.is_return:
+			return
+
+		if (
+			frappe.db.get_single_value("Manufacturing Settings", "backflush_raw_materials_based_on")
+			== "Material Transferred for Manufacture"
+		):
+			return
+
+		wo = self.pro_doc
+		if not wo:
+			return
+
+		pending_by_item = {}
+		for r in wo.required_items:
+			pending_by_item[r.item_code] = (
+				pending_by_item.get(r.item_code, 0.0) + flt(r.required_qty) - flt(r.transferred_qty)
+			)
+
+		transfer_by_item = {}
+		first_row_by_item = {}
+		for item in self.items:
+			if not item.s_warehouse:
+				continue
+
+			key = (
+				item.item_code if item.item_code in pending_by_item else getattr(item, "original_item", None)
+			)
+			if key not in pending_by_item:
+				continue
+
+			transfer_by_item[key] = transfer_by_item.get(key, 0.0) + flt(item.qty)
+			first_row_by_item.setdefault(key, item)
+
+		for key, transfer_qty in transfer_by_item.items():
+			pending_qty = max(0.0, pending_by_item[key])
+			if transfer_qty > pending_qty:
+				item = first_row_by_item[key]
+				frappe.throw(
+					_(
+						"Row #{0}: Cannot transfer {1} {2} of Item {3}. "
+						"Maximum transferable quantity is {4} {2}."
+					).format(
+						item.idx,
+						transfer_qty,
+						item.uom,
+						frappe.bold(item.item_code),
+						pending_qty,
+					),
+					title=_("Excess Material Transfer"),
 				)
 
 	def validate_same_source_target_warehouse_during_material_transfer(self):
@@ -1380,6 +1435,12 @@ class StockEntry(StockController, SubcontractingInwardController):
 			if d.s_warehouse or d.set_basic_rate_manually:
 				continue
 
+			# Zero-qty secondary items carry no inventory value; skip rate calculation
+			if d.type and flt(d.transfer_qty) == 0:
+				d.basic_rate = 0.0
+				d.basic_amount = 0.0
+				continue
+
 			if d.allow_zero_valuation_rate and d.basic_rate and self.purpose != "Receive from Customer":
 				d.basic_rate = 0.0
 				items.append(d.item_code)
@@ -1397,7 +1458,10 @@ class StockEntry(StockController, SubcontractingInwardController):
 				cost_allocation_per = frappe.get_value(
 					"BOM Secondary Item", d.bom_secondary_item, "cost_allocation_per"
 				)
-				d.basic_rate = (outgoing_items_cost * (cost_allocation_per / 100)) / d.transfer_qty
+				# Only recalculate when cost is actually allocated; otherwise preserve the
+				# user-entered rate (or fall through to get_valuation_rate below)
+				if cost_allocation_per and flt(d.transfer_qty):
+					d.basic_rate = (outgoing_items_cost * (cost_allocation_per / 100)) / d.transfer_qty
 
 			if not d.basic_rate and not d.allow_zero_valuation_rate:
 				if self.is_new():
@@ -2177,12 +2241,17 @@ class StockEntry(StockController, SubcontractingInwardController):
 				] += flt(t.base_amount * multiply_based_on) / divide_based_on
 
 		if item_account_wise_additional_cost:
+			precision = self.get_debit_field_precision()
+
 			for d in self.get("items"):
 				for account, amount in item_account_wise_additional_cost.get(
 					(d.item_code, d.name), {}
 				).items():
 					if not amount:
 						continue
+
+					amount["amount"] = flt(amount["amount"], precision)
+					amount["base_amount"] = flt(amount["base_amount"], precision)
 
 					gl_entries.append(
 						self.get_gl_dict(
@@ -3972,10 +4041,12 @@ class StockEntry(StockController, SubcontractingInwardController):
 	def update_subcontracting_order_status(self):
 		if self.subcontracting_order and self.purpose in ["Send to Subcontractor", "Material Transfer"]:
 			from erpnext.subcontracting.doctype.subcontracting_order.subcontracting_order import (
-				update_subcontracting_order_status,
+				set_subcontracting_order_status,
 			)
 
-			update_subcontracting_order_status(self.subcontracting_order)
+			# Trusted submit/cancel flow — a Stock operation must not require Subcontracting Order
+			# write permission, so use the no-check internal helper (not the whitelisted boundary).
+			set_subcontracting_order_status(self.subcontracting_order)
 
 	def update_pick_list_status(self):
 		from erpnext.stock.doctype.pick_list.pick_list import update_pick_list_status
@@ -4635,13 +4706,19 @@ def get_batchwise_serial_nos(item_code, row):
 
 
 def get_transferred_qty(material_request):
+	from pypika import Case
+
+	se = DocType("Stock Entry")
 	sed = DocType("Stock Entry Detail")
+	completed_qty = Case().when(se.add_to_transit == 1, sed.transferred_qty).else_(sed.transfer_qty)
 
 	query = (
 		frappe.qb.from_(sed)
+		.inner_join(se)
+		.on(se.name == sed.parent)
 		.select(
 			Sum(sed.transfer_qty).as_("transfer_qty"),
-			Sum(sed.transferred_qty).as_("transferred_qty"),
+			Sum(completed_qty).as_("transferred_qty"),
 		)
 		.where((sed.material_request == material_request) & (sed.docstatus == 1))
 	).run(as_dict=True)
