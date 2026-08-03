@@ -84,6 +84,11 @@ def stock_entry_row_requires_inspection(purpose, row):
 
 
 class StockController(AccountsController):
+	#: Vouchers whose stock value change should also be booked to the Expenses Added To Stock
+	#: account pair (Stock Entry, Stock Reconciliation). Purchase Receipt books its own, against
+	#: the landed cost amount rather than the stock value difference.
+	book_expenses_added_to_stock = False
+
 	def validate(self):
 		super().validate()
 
@@ -858,8 +863,88 @@ class StockController(AccountsController):
 						).format(wh, self.company)
 					)
 
+		if self.book_expenses_added_to_stock:
+			self.append_expenses_added_to_stock_entries(gl_list, voucher_details, sle_map)
+
 		return process_gl_map(
 			gl_list, precision=precision, from_repost=frappe.flags.through_repost_item_valuation
+		)
+
+	def book_stock_expense_enabled(self):
+		if not hasattr(self, "_book_stock_expense_enabled"):
+			self._book_stock_expense_enabled = cint(
+				frappe.db.get_single_value("Accounts Settings", "book_stock_expense_gl_entries")
+			)
+
+		return self._book_stock_expense_enabled
+
+	def append_expenses_added_to_stock_entries(self, gl_list, voucher_details, sle_map):
+		if not self.book_stock_expense_enabled():
+			return
+
+		precision = self.get_debit_field_precision()
+
+		for item_row in voucher_details:
+			sle_list = sle_map.get(item_row.name)
+			if not sle_list:
+				continue
+
+			amount = flt(sum(flt(sle.stock_value_difference) for sle in sle_list), precision)
+			if not amount:
+				continue
+
+			item_code = item_row.get("item_code") or sle_list[0].item_code
+			self.append_expenses_added_to_stock_pair(gl_list, item_code, amount, item_row)
+
+	def append_expenses_added_to_stock_pair(self, gl_list, item_code, amount, item_row):
+		# A service item holds no stock value, so there is nothing to book against it - and it must
+		# not make the expense accounts mandatory either. A zero pair would be rejected by GL Entry
+		# anyway, which needs a debit or a credit on every row.
+		if not amount or not frappe.get_cached_value("Item", item_code, "is_stock_item"):
+			return
+
+		fields = ("expenses_added_to_stock_account", "expenses_added_to_stock_contra_account")
+		details = get_expenses_added_to_stock_accounts(item_code, self.company)
+
+		for field in fields:
+			if not details.get(field):
+				frappe.throw(
+					_("Please set {0} in Company {1} or in the Item Defaults of Item {2}").format(
+						frappe.bold(_(frappe.unscrub(field))), self.company, item_code
+					)
+				)
+
+		cost_center = item_row.get("cost_center") or frappe.get_cached_value(
+			"Company", self.company, "cost_center"
+		)
+		remarks = _("Expenses Added To Stock for Item {0}").format(item_code)
+		common_args = {
+			"cost_center": cost_center,
+			"project": item_row.get("project") or self.get("project"),
+			"remarks": remarks,
+		}
+
+		gl_list.append(
+			self.get_gl_dict(
+				{
+					"account": details.expenses_added_to_stock_account,
+					"against": details.expenses_added_to_stock_contra_account,
+					"debit": amount,
+					**common_args,
+				},
+				item=item_row,
+			)
+		)
+		gl_list.append(
+			self.get_gl_dict(
+				{
+					"account": details.expenses_added_to_stock_contra_account,
+					"against": details.expenses_added_to_stock_account,
+					"debit": -1 * amount,
+					**common_args,
+				},
+				item=item_row,
+			)
 		)
 
 	def get_debit_field_precision(self):
@@ -1347,66 +1432,64 @@ class StockController(AccountsController):
 		if not batches:
 			return
 
-		field_mapper = {
-			"Sales Invoice": [["Sales Order", "sales_order"]],
-			"Delivery Note": [["Sales Order", "against_sales_order"]],
-			"Stock Entry": [
-				["Work Order", "work_order"],
-				["Subcontracting Inward Order", "subcontracting_inward_order"],
-			],
+		reference_fields = {
+			"Sales Invoice": ["sales_order"],
+			"Delivery Note": ["against_sales_order"],
+			"Stock Entry": ["work_order", "subcontracting_inward_order"],
 		}.get(self.doctype)
 
-		qty_field = {
-			"Sales Invoice": "qty",
-			"Delivery Note": "qty",
-			"Stock Entry": "fg_completed_qty",
-		}.get(self.doctype)
-
-		reserved_batches_data = self.get_reserved_batches(batches)
 		items = self.items
 		if self.doctype == "Stock Entry":
 			items = [self]
 
-		for item in items:
-			for field in field_mapper:
-				if not item.get(field[1]):
-					continue
+		own_vouchers = {item.get(field) for item in items for field in reference_fields if item.get(field)}
 
-				value = item.get(field[1])
-				for row in reserved_batches_data:
-					if self.doctype in ["Sales Invoice", "Delivery Note"] and row.item_code != item.get(
-						"item_code"
-					):
-						continue
+		outstanding_qty = defaultdict(float)
+		reservations = defaultdict(list)
+		for row in self.get_reserved_batches(batches):
+			if row.voucher_no in own_vouchers:
+				continue
 
-					if row.voucher_no == value:
-						continue
+			key = (row.batch_no, row.warehouse)
+			outstanding = flt(row.qty) - flt(row.delivered_qty)
+			outstanding_qty[key] += outstanding
+			if outstanding > 0:
+				reservations[key].append(row)
 
-					batch_qty = get_batch_qty(
-						row.batch_no,
-						row.warehouse,
-						posting_date=self.posting_date,
-						posting_time=self.posting_time,
-						consider_negative_batches=True,
-					)
+		precision = frappe.get_precision("Serial and Batch Entry", "qty")
+		for (batch_no, warehouse), reserved_qty in outstanding_qty.items():
+			if flt(reserved_qty, precision) <= 0:
+				continue
 
-					if item.get(qty_field) < batch_qty:
-						continue
+			batch_qty = get_batch_qty(
+				batch_no,
+				warehouse,
+				posting_date=self.posting_date,
+				posting_time=self.posting_time,
+				consider_negative_batches=True,
+			)
 
-					frappe.throw(
-						_(
-							"The batch {0} is already reserved in {1} {2}. So, cannot proceed with the {3} {4}, which is created against the {5} {6}."
-						).format(
-							frappe.bold(row.batch_no),
-							frappe.bold(row.voucher_type),
-							frappe.bold(row.voucher_no),
-							frappe.bold(self.doctype),
-							frappe.bold(self.name),
-							frappe.bold(field[0]),
-							frappe.bold(value),
-						),
-						title=_("Reserved Batch Conflict"),
-					)
+			if flt(batch_qty, precision) >= flt(reserved_qty, precision):
+				continue
+
+			vouchers = ", ".join(
+				f"{frappe.bold(voucher_type)} {frappe.bold(voucher_no)}"
+				for voucher_type, voucher_no in dict.fromkeys(
+					(row.voucher_type, row.voucher_no) for row in reservations[(batch_no, warehouse)]
+				)
+			)
+			frappe.throw(
+				_(
+					"The batch {0} is reserved for {1} in the warehouse {2} and the remaining quantity is not enough to cover the reservations. So, cannot proceed with the {3} {4}."
+				).format(
+					frappe.bold(batch_no),
+					vouchers,
+					frappe.bold(warehouse),
+					frappe.bold(self.doctype),
+					frappe.bold(self.name),
+				),
+				title=_("Reserved Batch Conflict"),
+			)
 
 	def get_reserved_batches(self, batches):
 		doctype = frappe.qb.DocType("Stock Reservation Entry")
@@ -1418,9 +1501,10 @@ class StockController(AccountsController):
 			.on(doctype.name == child_doc.parent)
 			.select(
 				child_doc.batch_no,
+				child_doc.qty,
+				child_doc.delivered_qty,
 				doctype.voucher_type,
 				doctype.voucher_no,
-				doctype.item_code,
 				doctype.warehouse,
 			)
 			.where((doctype.docstatus == 1) & (child_doc.batch_no.isin(batches)))
@@ -2057,7 +2141,7 @@ class StockController(AccountsController):
 
 
 @frappe.whitelist()
-def show_accounting_ledger_preview(company, doctype, docname):
+def show_accounting_ledger_preview(company: str, doctype: str, docname: str):
 	filters = frappe._dict(company=company, include_dimensions=1)
 	doc = frappe.get_lazy_doc(doctype, docname)
 	doc.check_permission("read")
@@ -2071,7 +2155,7 @@ def show_accounting_ledger_preview(company, doctype, docname):
 
 
 @frappe.whitelist()
-def show_stock_ledger_preview(company, doctype, docname):
+def show_stock_ledger_preview(company: str, doctype: str, docname: str):
 	filters = frappe._dict(company=company)
 	doc = frappe.get_lazy_doc(doctype, docname)
 	doc.check_permission("read")
@@ -2569,3 +2653,31 @@ def get_item_wise_inventory_account_map(rows, company):
 				)
 
 	return inventory_map
+
+
+@frappe.request_cache
+def get_expenses_added_to_stock_accounts(item_code, company):
+	"""Resolves the Expenses Added To Stock account pair for an item, falling back through
+	Item Defaults -> Item Group -> Brand -> Company."""
+	from erpnext.stock.doctype.item.item import get_item_defaults
+
+	fields = ["expenses_added_to_stock_account", "expenses_added_to_stock_contra_account"]
+	defaults = get_item_defaults(item_code, company)
+
+	details = frappe._dict({field: defaults.get(field) for field in fields})
+
+	if not details.expenses_added_to_stock_account:
+		details = frappe.db.get_value(
+			"Item Default", {"parent": defaults.item_group, "company": company}, fields, as_dict=1
+		) or frappe._dict({})
+
+	if not details.expenses_added_to_stock_account and defaults.get("brand"):
+		details = frappe.db.get_value(
+			"Item Default", {"parent": defaults.brand, "company": company}, fields, as_dict=1
+		) or frappe._dict({})
+
+	for field in fields:
+		if not details.get(field):
+			details[field] = frappe.get_cached_value("Company", company, field)
+
+	return details

@@ -1806,6 +1806,10 @@ class WorkOrder(Document):
 
 	def recompute_material_transferred_for_manufacturing(self, transferred_items):
 		"""Set material_transferred_for_manufacturing based on actual item-level transfers, not fg_completed_qty."""
+		# Job Card transfers use the minimum completed quantity across operations.
+		if self.operations and self.transfer_material_against == "Job Card":
+			return
+
 		# When fg_completed_qty > 0 (direct stock entries, excess transfer), preserve the
 		# SUM(fg_completed_qty) approach so excess-transfer tracking works correctly.
 		sum_fg_completed_qty = self.get_transferred_or_manufactured_qty(
@@ -2550,7 +2554,13 @@ def get_item_details(item, project=None, skip_bom_info=False, throw=True):
 
 @frappe.whitelist()
 def make_work_order(
-	bom_no, item, qty=0, company=None, project=None, variant_items=None, use_multi_level_bom=None
+	bom_no: str,
+	item: str,
+	qty: float = 0,
+	company: str | None = None,
+	project: str | None = None,
+	variant_items: str | list | None = None,
+	use_multi_level_bom: bool | None = None,
 ):
 	from erpnext import get_default_company
 
@@ -2559,7 +2569,8 @@ def make_work_order(
 
 	item_details = get_item_details(item, project)
 
-	if frappe.db.get_value("Item", item, "variant_of"):
+	# selected BOM already belongs to this variant — keep it
+	if frappe.db.get_value("Item", item, "variant_of") and frappe.db.get_value("BOM", bom_no, "item") != item:
 		if variant_bom := frappe.db.get_value(
 			"BOM",
 			{"item": item, "is_default": 1, "docstatus": 1},
@@ -2979,7 +2990,7 @@ def get_work_order_operation_data(work_order, operation, workstation):
 
 
 @frappe.whitelist()
-def create_pick_list(source_name, target_doc=None, for_qty=None):
+def create_pick_list(source_name: str, target_doc: str | dict | None = None, for_qty: float | None = None):
 	for_qty = for_qty or json.loads(target_doc).get("for_qty")
 	max_finished_goods_qty = frappe.db.get_value("Work Order", source_name, "qty")
 
@@ -3009,6 +3020,7 @@ def create_pick_list(source_name, target_doc=None, for_qty=None):
 			"Work Order": {"doctype": "Pick List", "validation": {"docstatus": ["=", 1]}},
 			"Work Order Item": {
 				"doctype": "Pick List Item",
+				"field_no_map": ["transferred_qty"],
 				"postprocess": update_item_quantity,
 				"condition": lambda doc: abs(doc.transferred_qty) < abs(doc.required_qty),
 			},

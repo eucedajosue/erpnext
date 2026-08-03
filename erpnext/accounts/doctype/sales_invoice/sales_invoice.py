@@ -498,6 +498,7 @@ class SalesInvoice(SellingController):
 			self.update_billing_status_for_zero_amount_refdoc("Delivery Note")
 			self.update_billing_status_for_zero_amount_refdoc("Sales Order")
 			self.check_credit_limit()
+			self.check_overdue_billing_threshold()
 
 		if cint(self.is_pos) != 1 and not self.is_return:
 			self.update_against_document_in_jv()
@@ -766,6 +767,11 @@ class SalesInvoice(SellingController):
 			for pos_invoice in pos_invoices:
 				pos_invoice_doc = frappe.get_doc("POS Invoice", pos_invoice)
 				pos_invoice_doc.cancel()
+
+	def check_overdue_billing_threshold(self):
+		from erpnext.selling.doctype.customer.customer import check_overdue_billing_threshold
+
+		check_overdue_billing_threshold(self.customer, self.company)
 
 	@frappe.whitelist()
 	def set_missing_values(self, for_validate=False):
@@ -3145,8 +3151,6 @@ def create_dunning(source_name, target_doc=None, ignore_permissions=False):
 	from frappe.model.mapper import get_mapped_doc
 
 	def postprocess_dunning(source, target):
-		from erpnext.accounts.doctype.dunning.dunning import get_dunning_letter_text
-
 		dunning_type = frappe.db.exists("Dunning Type", {"is_default": 1, "company": source.company})
 		if dunning_type:
 			dunning_type = frappe.get_doc("Dunning Type", dunning_type)
@@ -3155,14 +3159,8 @@ def create_dunning(source_name, target_doc=None, ignore_permissions=False):
 			target.dunning_fee = dunning_type.dunning_fee
 			target.income_account = dunning_type.income_account
 			target.cost_center = dunning_type.cost_center
-			letter_text = get_dunning_letter_text(
-				dunning_type=dunning_type.name, doc=target.as_dict(), language=source.language
-			)
-
-			if letter_text:
-				target.body_text = letter_text.get("body_text")
-				target.closing_text = letter_text.get("closing_text")
-				target.language = letter_text.get("language")
+			target.language = source.language
+			target.get_dunning_letter_text()
 
 		# update outstanding from doc
 		if source.payment_schedule and len(source.payment_schedule) == 1:
