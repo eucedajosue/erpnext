@@ -559,10 +559,9 @@ erpnext.PointOfSale.ItemCart = class {
 						}
 
 						frappe.call({
-							method: "erpnext.accounts.utils.get_balance_on",
+							method: "erpnext.selling.page.point_of_sale.point_of_sale.get_customer_balance",
 							args: {
-								party_type: "Customer",
-								party: customer,
+								customer,
 								date: frappe.datetime.now_date()
 							},
 							callback: (r) => {

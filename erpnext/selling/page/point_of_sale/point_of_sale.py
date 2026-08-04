@@ -269,6 +269,22 @@ def search_for_serial_or_batch_or_barcode_number(search_value: str) -> dict[str,
 	return scan_barcode(search_value)
 
 
+@frappe.whitelist()
+def get_customer_balance(customer: str, date: str | None = None):
+	if not customer:
+		frappe.throw(frappe._("Customer is required"))
+
+	frappe.get_doc("Customer", customer).check_permission("read")
+
+	from erpnext.accounts.utils import get_balance_on
+
+	return get_balance_on(
+		party_type="Customer",
+		party=customer,
+		date=date or frappe.utils.nowdate(),
+	)
+
+
 def get_conditions(search_term, item=None):
 	if item is None:
 		item = frappe.qb.DocType("Item")
