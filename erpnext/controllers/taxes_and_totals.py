@@ -227,7 +227,12 @@ class calculate_taxes_and_totals:
 		if self.doc.get("is_consolidated") or self.discount_amount_applied:
 			return
 
-		do_not_round_fields = ["valuation_rate", "incoming_rate", "sales_incoming_rate"]
+		do_not_round_fields = [
+			"valuation_rate",
+			"incoming_rate",
+			"sales_incoming_rate",
+			"conversion_factor",
+		]
 		for item in self.doc.items:
 			self.doc.round_floats_in(item, do_not_round_fields=do_not_round_fields)
 			self.calculate_item_rate(item)
@@ -896,8 +901,9 @@ class calculate_taxes_and_totals:
 						item.net_amount = flt(
 							item.net_amount + rounding_difference, item.precision("net_amount")
 						)
+						# net_amount went up by rounding_difference, so its discount share goes down
 						item.distributed_discount_amount = flt(
-							distributed_amount + rounding_difference,
+							distributed_amount - rounding_difference,
 							item.precision("distributed_discount_amount"),
 						)
 						net_total += rounding_difference
