@@ -13704,7 +13704,7 @@ msgstr "Crear recibo de compra"
 
 #: erpnext/utilities/activation.py:88
 msgid "Create Quotation"
-msgstr "Crear cotización"
+msgstr "Crear Cotización"
 
 #. Label of an action in the Onboarding Step 'Create Raw Materials'
 #: erpnext/manufacturing/onboarding_step/create_raw_materials/create_raw_materials.json
@@ -23367,7 +23367,7 @@ msgstr "Ocultar Imágenes"
 
 #: erpnext/selling/page/point_of_sale/pos_controller.js:261
 msgid "Hide Recent Orders"
-msgstr ""
+msgstr "Volver al Carrito"
 
 #. Label of the hide_unavailable_items (Check) field in DocType 'POS Profile'
 #: erpnext/accounts/doctype/pos_profile/pos_profile.json
@@ -33827,7 +33827,7 @@ msgstr "Eventos abiertos"
 
 #: erpnext/selling/page/point_of_sale/pos_controller.js:243
 msgid "Open Form View"
-msgstr "Abrir vista de formulario"
+msgstr "Abrir Vista de Formulario"
 
 #. Label of the issue (Check) field in DocType 'Email Digest'
 #: erpnext/setup/doctype/email_digest/email_digest.json
@@ -43681,7 +43681,7 @@ msgstr "Recepción"
 #: erpnext/selling/page/point_of_sale/pos_controller.js:261
 #: erpnext/selling/page/point_of_sale/pos_past_order_list.js:19
 msgid "Recent Orders"
-msgstr ""
+msgstr "Recibos Recientes"
 
 #: erpnext/selling/page/point_of_sale/pos_item_cart.js:924
 msgid "Recent Transactions"
@@ -63374,4 +63374,32 @@ msgstr ""
 #: erpnext/accounts/doctype/bank_transaction/bank_transaction.py:448
 msgid "{} {} is not affecting bank account {}"
 msgstr ""
+
+msgid "Cash Withdrawal"
+msgstr "Retiro de Efectivo"
+
+
+msgid "Payment On Account"
+msgstr "Pago A Cuenta"
+
+
+msgid "Create Invoice from Sales Order"
+msgstr "Crear Factura Desde Orden de Venta"
+
+
+
+msgid "Create Invoice from Quotation"
+msgstr "Crear Factura Desde Cotización"
+
+
+
+msgid "Create Invoice from Sales Invoice"
+msgstr "Crear Factura Desde Otra Factura"
+
+
+msgid "Remove Item Tax Templates"
+msgstr "Eliminar ISV"
+
+msgid "Recent Orders"
+msgstr "Recibos Recientes"
 

@@ -253,7 +253,7 @@ erpnext.PointOfSale.Controller = class {
 		};
 
 		this.page.add_menu_item(__("Cash Withdrawal"), () => open_payment_entry("Pay"));
-		this.page.add_menu_item(__("Payment on account"), () => open_payment_entry("Receive"));
+		this.page.add_menu_item(__("Payment On Account"), () => open_payment_entry("Receive"));
 		this.page.add_menu_item(
 			__("Create Invoice from Sales Order"),
 			this.open_sales_order_dialog.bind(this),
