@@ -45,6 +45,106 @@ def update_last_purchase_rate(doc, is_submit) -> None:
 		# update last purchsae rate
 		frappe.db.set_value("Item", d.item_code, "last_purchase_rate", flt(last_purchase_rate))
 
+		# actualiza el campo custom_valuation_rate
+		frappe.db.set_value("Item", d.item_code, "custom_valuation_rate_top", flt(last_purchase_rate))
+		frappe.db.set_value("Item", d.item_code, "valuation_rate", flt(last_purchase_rate))
+
+		# Mantener el margen consistente con el cálculo realizado en el formulario de Item.
+		standard_rate = flt(frappe.db.get_value("Item", d.item_code, "standard_rate"))
+		sales_tax_rate = get_sales_tax_rate(d.item_code)
+		tax_multiplier = 1 + (sales_tax_rate / 100)
+		net_selling_rate = standard_rate / tax_multiplier if tax_multiplier > 0 else standard_rate
+		profit_margin = (
+			(1 - (flt(last_purchase_rate) / net_selling_rate)) * 100 if net_selling_rate > 0 else 0
+		)
+		frappe.db.set_value("Item", d.item_code, "custom_profit_margin", flt(profit_margin))
+		# actualizar el precio de compra en la lista de precios
+		update_buying_price_list_rate(doc, d, last_purchase_rate)
+  
+
+
+def get_sales_tax_rate(item_code: str) -> float:
+	"""Return the combined rate from the item's assigned tax templates."""
+
+	template_names = set(
+		frappe.get_all(
+			"Item Tax",
+			filters={"parent": item_code, "parenttype": "Item"},
+			pluck="item_tax_template",
+		)
+	)
+	if not template_names:
+		return 0
+
+	tax_rates = frappe.get_all(
+		"Item Tax Template Detail",
+		filters={"parent": ["in", list(template_names)]},
+		pluck="tax_rate",
+	)
+	return sum(flt(tax_rate) for tax_rate in tax_rates)
+
+
+def update_buying_price_list_rate(doc, item_row, base_purchase_rate: float) -> None:
+	"""Upsert purchase price into Item Price for the buying price list."""
+
+	if not item_row.get("item_code"):
+		return
+
+	buying_price_list = doc.get("buying_price_list") or frappe.db.get_single_value(
+		"Buying Settings", "buying_price_list"
+	)
+	if not buying_price_list:
+		return
+
+	price_list_currency = frappe.db.get_value("Price List", buying_price_list, "currency")
+	if not price_list_currency:
+		return
+
+	stock_uom = frappe.db.get_value("Item", item_row.item_code, "stock_uom")
+	if not stock_uom:
+		return
+
+	company_currency = None
+	if doc.get("company"):
+		company_currency = frappe.get_cached_value("Company", doc.company, "default_currency")
+
+	price_list_rate = 0.0
+	if price_list_currency == doc.get("currency"):
+		conversion_factor = flt(item_row.get("conversion_factor"))
+		if conversion_factor:
+			price_list_rate = flt(item_row.get("net_rate") or item_row.get("rate")) / conversion_factor
+	elif company_currency and price_list_currency == company_currency:
+		price_list_rate = flt(base_purchase_rate)
+
+	if not price_list_rate:
+		return
+
+	existing_item_price = frappe.db.get_value(
+		"Item Price",
+		{
+			"item_code": item_row.item_code,
+			"price_list": buying_price_list,
+			"currency": price_list_currency,
+			"uom": stock_uom,
+		},
+		"name",
+	)
+
+	if existing_item_price:
+		frappe.db.set_value("Item Price", existing_item_price, "price_list_rate", flt(price_list_rate))
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Item Price",
+			"item_code": item_row.item_code,
+			"price_list": buying_price_list,
+			"price_list_rate": flt(price_list_rate),
+			"currency": price_list_currency,
+			"uom": stock_uom,
+		}
+	).insert(ignore_permissions=True)
+
 
 def validate_for_items(doc) -> None:
 	items = []
