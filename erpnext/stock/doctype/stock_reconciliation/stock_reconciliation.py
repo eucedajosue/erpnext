@@ -1127,7 +1127,15 @@ class StockReconciliation(StockController):
 
 
 @frappe.whitelist()
-def get_items(warehouse, posting_date, posting_time, company, item_code=None, ignore_empty_stock=False):
+def get_items(
+	warehouse,
+	posting_date,
+	posting_time,
+	company,
+	item_code=None,
+	ignore_empty_stock=False,
+	shelf_location=None,
+):
 	ignore_empty_stock = cint(ignore_empty_stock)
 	items = []
 	if item_code and warehouse:
@@ -1135,6 +1143,8 @@ def get_items(warehouse, posting_date, posting_time, company, item_code=None, ig
 
 	if not item_code:
 		items = get_items_for_stock_reco(warehouse, company)
+
+	items = filter_items_by_shelf_location(items, shelf_location)
 
 	res = []
 	itemwise_batch_data = get_itemwise_batch(warehouse, posting_date, company, item_code)
@@ -1170,6 +1180,34 @@ def get_items(warehouse, posting_date, posting_time, company, item_code=None, ig
 			res.append(args)
 
 	return res
+
+
+def filter_items_by_shelf_location(items, shelf_location):
+	if not shelf_location or not items:
+		return items
+
+	item_codes = {row.item_code for row in items}
+
+	if not item_codes:
+		return items
+
+	rows = frappe.db.sql(
+		"""
+		select
+			parent as item_code,
+			warehouse
+		from `tabItem Warehouse Location`
+		where
+			shelf_location = %(shelf_location)s
+			and parent in %(item_codes)s
+		""",
+		{"item_codes": tuple(item_codes), "shelf_location": shelf_location},
+		as_dict=1,
+	)
+
+	allowed_pairs = {(row.item_code, row.warehouse) for row in rows}
+
+	return [item for item in items if (item.item_code, item.warehouse) in allowed_pairs]
 
 
 def get_item_and_warehouses(item_code, warehouse):

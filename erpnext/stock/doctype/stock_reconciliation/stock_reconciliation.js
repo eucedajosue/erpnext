@@ -111,7 +111,7 @@ frappe.ui.form.on("Stock Reconciliation", {
 	get_items: function (frm) {
 		let fields = [
 			{
-				label: "Warehouse",
+				label: __("Warehouse"),
 				fieldname: "warehouse",
 				fieldtype: "Link",
 				options: "Warehouse",
@@ -125,7 +125,21 @@ frappe.ui.form.on("Stock Reconciliation", {
 				},
 			},
 			{
-				label: "Item Code",
+				label: __("Shelf Location"),
+				fieldname: "shelf_location",
+				fieldtype: "Link",
+				options: "Shelf Location",
+				reqd: 0,
+				get_query: function () {
+					return {
+						filters: {
+							company: frm.doc.company,
+						},
+					};
+				},
+			},
+			{
+				label: __("Item Code"),
 				fieldname: "item_code",
 				fieldtype: "Link",
 				options: "Item",
@@ -144,6 +158,7 @@ frappe.ui.form.on("Stock Reconciliation", {
 					method: "erpnext.stock.doctype.stock_reconciliation.stock_reconciliation.get_items",
 					args: {
 						warehouse: data.warehouse,
+						shelf_location: data.shelf_location,
 						posting_date: frm.doc.posting_date,
 						posting_time: frm.doc.posting_time,
 						company: frm.doc.company,
