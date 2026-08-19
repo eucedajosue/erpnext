@@ -1285,7 +1285,7 @@ def get_item_data(row, qty, valuation_rate, serial_no=None):
 	return {
 		"item_code": row.item_code,
 		"warehouse": row.warehouse,
-		"qty": qty,
+		"qty": 0,
 		"item_name": row.item_name,
 		"valuation_rate": valuation_rate,
 		"current_qty": qty,
