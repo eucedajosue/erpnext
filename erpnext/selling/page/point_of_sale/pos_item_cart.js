@@ -238,6 +238,12 @@ erpnext.PointOfSale.ItemCart = class {
 
 	bind_events() {
 		const me = this;
+		this.$customer_section.on("click", ".add-customer-btn", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			me.open_new_customer_dialog();
+		});
+
 		this.$customer_section.on("click", ".reset-customer-btn", function () {
 			me.reset_customer_selector();
 		});
@@ -491,7 +497,10 @@ erpnext.PointOfSale.ItemCart = class {
 
 	make_customer_selector() {
 		this.$customer_section.html(`
-			<div class="customer-field"></div>
+			<div class="customer-selector-row">
+				<div class="customer-field"></div>
+				<button type="button" class="btn btn-default btn-sm add-customer-btn" title="${__("Add Customer")}">+</button>
+			</div>
 		`);
 		const me = this;
 		const allowed_customer_group = this.allowed_customer_groups || [];
@@ -514,18 +523,7 @@ erpnext.PointOfSale.ItemCart = class {
 				},
 				onchange: function () {
 					if (this.value) {
-						const frm = me.events.get_frm();
-						frappe.dom.freeze();
-						frappe.model.set_value(frm.doc.doctype, frm.doc.name, "customer", this.value);
-						frm.script_manager.trigger("customer", frm.doc.doctype, frm.doc.name).then(() => {
-							frappe.run_serially([
-								() => me.fetch_customer_details(this.value),
-								() => me.events.customer_details_updated(me.customer_info),
-								() => me.update_customer_section(),
-								() => me.update_totals_section(),
-								() => frappe.dom.unfreeze(),
-							]);
-						});
+						me.set_customer(this.value);
 					}
 				},
 			},
@@ -533,6 +531,38 @@ erpnext.PointOfSale.ItemCart = class {
 			render_input: true,
 		});
 		this.customer_field.toggle_label(false);
+	}
+
+	set_customer(customer) {
+		if (!customer) return;
+
+		const frm = this.events.get_frm();
+		if (!frm?.doc) return;
+
+		frappe.dom.freeze();
+		frappe.model.set_value(frm.doc.doctype, frm.doc.name, "customer", customer);
+		frm.script_manager.trigger("customer", frm.doc.doctype, frm.doc.name).then(() => {
+			frappe.run_serially([
+				() => this.fetch_customer_details(customer),
+				() => this.events.customer_details_updated(this.customer_info),
+				() => this.update_customer_section(),
+				() => this.update_totals_section(),
+				() => frappe.dom.unfreeze(),
+			]);
+		});
+	}
+
+	open_new_customer_dialog() {
+		frappe.ui.form.make_quick_entry("Customer", (doc) => {
+			if (!doc?.name) return;
+
+			this.customer_field?.set_value(doc.name);
+
+			frappe.show_alert({
+				message: __("Customer {0} created", [doc.name]),
+				indicator: "green",
+			});
+		});
 	}
 
 	fetch_customer_details(customer) {
@@ -677,6 +707,7 @@ erpnext.PointOfSale.ItemCart = class {
 							${get_customer_description()}
 						</div>
 						<div class="customer-actions">
+								<button type="button" class="btn btn-default btn-sm add-customer-btn" title="${__("Add Customer")}">+</button>
 							<a href="/app/customer/${customer}" target="_blank" class="edit-customer-btn">
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 									<path d="M12 3H7.2C5.51984 3 4.67976 3 4.03803 3.32698C3.47354 3.6146 3.0146 4.07354 2.72698 4.63803C2.4 5.27976 2.4 6.11984 2.4 7.8V16.2C2.4 17.8802 2.4 18.7202 2.72698 19.362C3.0146 19.9265 3.47354 20.3854 4.03803 20.673C4.67976 21 5.51984 21 7.2 21H15.6C17.2802 21 18.1202 21 18.762 20.673C19.3265 20.3854 19.7854 19.9265 20.073 19.362C20.4 18.7202 20.4 17.8802 20.4 16.2V12" stroke="#8D99A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -981,12 +1012,15 @@ erpnext.PointOfSale.ItemCart = class {
 
 	disable_customer_selection() {
 		this.$customer_section.find(".reset-customer-btn").css("visibility", "hidden");
+		this.$customer_section.find(".add-customer-btn").prop("disabled", true);
 		this.$customer_section.off("click", ".customer-display");
 		this.$customer_section.off("click", ".reset-customer-btn");
+		this.$customer_section.off("click", ".add-customer-btn");
 	}
 
 	enable_customer_selection() {
 		this.$customer_section.find(".reset-customer-btn").css("visibility", "visible");
+		this.$customer_section.find(".add-customer-btn").prop("disabled", false);
 		this.$customer_section.on("click", ".customer-display", (e) => {
 			if ($(e.target).closest(".reset-customer-btn").length) return;
 
@@ -995,6 +1029,11 @@ erpnext.PointOfSale.ItemCart = class {
 		});
 		this.$customer_section.on("click", ".reset-customer-btn", () => {
 			this.reset_customer_selector();
+		});
+		this.$customer_section.on("click", ".add-customer-btn", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.open_new_customer_dialog();
 		});
 	}
 

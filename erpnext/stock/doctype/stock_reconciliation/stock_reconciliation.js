@@ -133,7 +133,7 @@ frappe.ui.form.on("Stock Reconciliation", {
 				get_query: function () {
 					return {
 						filters: {
-							company: frm.doc.company,
+							warehouse: frm.doc.warehouse,
 						},
 					};
 				},

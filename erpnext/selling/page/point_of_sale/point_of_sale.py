@@ -289,11 +289,22 @@ def get_conditions(search_term, item=None):
 	if item is None:
 		item = frappe.qb.DocType("Item")
 
-	pattern = f"%{search_term}%"
-	conditions = [item.name.like(pattern), item.item_name.like(pattern)]
-	conditions += add_search_fields_condition(search_term, item)
+	search_terms = get_search_terms(search_term)
+	if not search_terms:
+		search_terms = [search_term]
 
-	return Criterion.any(conditions)
+	conditions = []
+	for term in search_terms:
+		pattern = f"%{term}%"
+		term_conditions = [item.name.like(pattern), item.item_name.like(pattern)]
+		term_conditions += add_search_fields_condition(term, item)
+		conditions.append(Criterion.any(term_conditions))
+
+	return Criterion.all(conditions)
+
+
+def get_search_terms(search_term):
+	return [term for term in (search_term or "").split() if term]
 
 
 def add_search_fields_condition(search_term, item=None):

@@ -1,11 +1,77 @@
+.point-of-sale-app .customer-cart-container .customer-section .customer-selector-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.point-of-sale-app .customer-cart-container .customer-section .customer-selector-row .customer-field {
+	flex: 1;
+}
+
+.point-of-sale-app .customer-cart-container .customer-section .customer-selector-row .add-customer-btn {
+	min-width: 34px;
+	height: 34px;
+	padding: 0;
+	font-size: 20px;
+	line-height: 1;
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
 .customer-actions {
 	display: flex;
 	align-items: center;
+	gap: 8px;
 }
 
-.edit-customer-btn {
-	margin-right: 10px;
+.point-of-sale-app .customer-cart-container .customer-section .customer-selector-row .add-customer-btn,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .add-customer-btn,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .edit-customer-btn,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .reset-customer-btn {
+	min-width: 34px;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: 1px solid #d1d5db;
+	border-radius: 10px;
+	background: #ffffff;
+	color: #334155;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	cursor: pointer;
+	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
+	transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+	text-decoration: none;
+}
+
+.point-of-sale-app .customer-cart-container .customer-section .customer-selector-row .add-customer-btn:hover,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .add-customer-btn:hover,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .edit-customer-btn:hover,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .reset-customer-btn:hover {
+	background: #f8fafc;
+	border-color: #94a3b8;
+	box-shadow: 0 3px 10px rgba(15, 23, 42, 0.14);
+}
+
+.point-of-sale-app .customer-cart-container .customer-section .customer-selector-row .add-customer-btn:disabled,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .add-customer-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+	box-shadow: none;
+}
+
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .edit-customer-btn svg,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .reset-customer-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .edit-customer-btn svg path,
+.point-of-sale-app .customer-cart-container .customer-section .customer-actions .reset-customer-btn svg path {
+	stroke: currentColor !important;
 }
 
 .point-of-sale-app .items-selector .item-rate-controls {

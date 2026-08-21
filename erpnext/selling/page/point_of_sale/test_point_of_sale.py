@@ -95,6 +95,10 @@ class TestPointOfSaleGetItems(ERPNextTestSuite):
 		item_codes = self._get_item_codes(partial)
 		self.assertIn(self.item_code, item_codes)
 
+	def test_search_matches_terms_in_any_order(self):
+		item_codes = self._get_item_codes("Item POS")
+		self.assertIn(self.item_code, item_codes)
+
 	def test_disabled_item_is_excluded(self):
 		# disabled == 0 is part of the converted WHERE clause; flipping it
 		# must drop the item even when the search term matches.
