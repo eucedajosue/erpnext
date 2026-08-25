@@ -152,6 +152,50 @@ class TestStockReconciliation(ERPNextTestSuite, StockTestMixin):
 			[items[0]["item_code"], items[0]["warehouse"], items[0]["qty"]],
 		)
 
+	def test_save_keeps_unchanged_items_and_submit_ignores_them(self):
+		item_code = self.make_item().name
+		warehouse = "_Test Warehouse - _TC"
+
+		make_purchase_receipt(item_code=item_code, warehouse=warehouse, qty=5, rate=100)
+
+		sr = create_stock_reconciliation(
+			item_code=item_code,
+			warehouse=warehouse,
+			qty=6,
+			rate=100,
+			do_not_save=1,
+		)
+
+		sr.append(
+			"items",
+			{
+				"item_code": item_code,
+				"warehouse": warehouse,
+				"qty": 5,
+				"valuation_rate": 100,
+				"reconcile_all_serial_batch": 1,
+			},
+		)
+
+		sr.insert()
+		self.assertEqual(len(sr.items), 2)
+
+		unchanged_row = next(row for row in sr.items if flt(row.qty) == 5)
+		changed_row = next(row for row in sr.items if flt(row.qty) == 6)
+
+		sr.submit()
+
+		sle_voucher_detail_nos = frappe.get_all(
+			"Stock Ledger Entry",
+			filters={"voucher_type": "Stock Reconciliation", "voucher_no": sr.name, "is_cancelled": 0},
+			pluck="voucher_detail_no",
+		)
+
+		self.assertIn(changed_row.name, sle_voucher_detail_nos)
+		self.assertNotIn(unchanged_row.name, sle_voucher_detail_nos)
+
+		sr.cancel()
+
 	def test_stock_reco_for_serialized_item(self):
 		to_delete_records = []
 

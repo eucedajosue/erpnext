@@ -265,6 +265,28 @@ def get_items(start, page_length, price_list, item_group, pos_profile, search_te
 
 
 @frappe.whitelist()
+def get_items_stock_qty(pos_profile, item_codes):
+	"""Return stock availability map for item codes using POS Profile warehouse."""
+	if isinstance(item_codes, str):
+		item_codes = json.loads(item_codes)
+
+	item_codes = [item_code for item_code in (item_codes or []) if item_code]
+	if not item_codes:
+		return {}
+
+	warehouse = frappe.db.get_value("POS Profile", pos_profile, "warehouse")
+	if not warehouse:
+		return {}
+
+	stock_map = {}
+	for item_code in set(item_codes):
+		qty, _, _ = get_stock_availability(item_code, warehouse)
+		stock_map[item_code] = qty
+
+	return stock_map
+
+
+@frappe.whitelist()
 def search_for_serial_or_batch_or_barcode_number(search_value: str) -> dict[str, str | None]:
 	return scan_barcode(search_value)
 

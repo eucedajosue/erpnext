@@ -131,21 +131,8 @@ erpnext.PointOfSale.ItemSelector = class {
 		const { item_image, serial_no, batch_no, barcode, actual_qty, uom, price_list_rate, has_serial_no, has_batch_no } = item;
 		const item_name = item.item_name || item.item_code || __("Unnamed Item");
 		const precision = flt(price_list_rate, 2) % 1 != 0 ? 2 : 0;
-		let indicator_color;
-		let qty_to_display = actual_qty;
+		let { indicator_color, qty_to_display } = this.get_stock_indicator_details(item);
 		const qty_in_cart = this.get_item_qty_in_cart(item);
-
-		if (item.is_stock_item) {
-			indicator_color = actual_qty > 10 ? "green" : actual_qty <= 0 ? "red" : "orange";
-
-			if (Math.round(qty_to_display) > 999) {
-				qty_to_display = Math.round(qty_to_display) / 1000;
-				qty_to_display = qty_to_display.toFixed(1) + "K";
-			}
-		} else {
-			indicator_color = "";
-			qty_to_display = "";
-		}
 
 		function get_item_image_html() {
 			if (me.hide_images) return "";
@@ -173,6 +160,7 @@ erpnext.PointOfSale.ItemSelector = class {
 				data-batch-no="${escape(batch_no)}" data-uom="${escape(uom)}"
 				data-rate="${escape(price_list_rate || 0)}"
 				data-stock-uom="${escape(item.stock_uom)}"
+				data-is-stock-item="${item.is_stock_item ? 1 : 0}"
 				data-has-serial-no="${escape(has_serial_no)}"
 				data-has-batch-no="${escape(has_batch_no)}"
 				title="${item.item_name}">
@@ -207,6 +195,26 @@ erpnext.PointOfSale.ItemSelector = class {
 					}
 				</div>
 			</div>`;
+	}
+
+	get_stock_indicator_details(item) {
+		const is_stock_item = cint(item.is_stock_item);
+		const actual_qty = flt(item.actual_qty);
+		let indicator_color = "";
+		let qty_to_display = "";
+
+		if (!is_stock_item) {
+			return { indicator_color, qty_to_display };
+		}
+
+		indicator_color = actual_qty > 10 ? "green" : actual_qty <= 0 ? "red" : "orange";
+		qty_to_display = actual_qty;
+
+		if (Math.round(actual_qty) > 999) {
+			qty_to_display = (Math.round(actual_qty) / 1000).toFixed(1) + "K";
+		}
+
+		return { indicator_color, qty_to_display };
 	}
 
 	get_item_qty_in_cart(item) {
@@ -257,6 +265,76 @@ erpnext.PointOfSale.ItemSelector = class {
 			$item.find(".item-card-qty-decrease").prop("disabled", !has_qty);
 			$item.find(".item-cart-controls").toggleClass("is-hidden", !has_qty).toggleClass("has-qty", has_qty);
 		});
+	}
+
+	async refresh_available_qty_for_items(item_codes = []) {
+		const unique_item_codes = [...new Set((item_codes || []).filter(Boolean))];
+		if (!unique_item_codes.length) return;
+
+		const response = await frappe.call({
+			method: "erpnext.selling.page.point_of_sale.point_of_sale.get_items_stock_qty",
+			args: {
+				pos_profile: this.pos_profile,
+				item_codes: unique_item_codes,
+			},
+		});
+
+		const stock_map = response?.message || {};
+		if (!Object.keys(stock_map).length) return;
+
+		if (Array.isArray(this.items)) {
+			this.items = this.items.map((item) => {
+				if (!Object.prototype.hasOwnProperty.call(stock_map, item.item_code)) return item;
+				return {
+					...item,
+					actual_qty: flt(stock_map[item.item_code]),
+				};
+			});
+		}
+
+		this.$items_container.find(".item-wrapper").each((_, element) => {
+			const $item = $(element);
+			const item_code = unescape($item.attr("data-item-code") || "");
+			if (!Object.prototype.hasOwnProperty.call(stock_map, item_code)) return;
+
+			const is_stock_item = cint(unescape($item.attr("data-is-stock-item") || "0"));
+			const actual_qty = flt(stock_map[item_code]);
+			const { indicator_color, qty_to_display } = this.get_stock_indicator_details({
+				is_stock_item,
+				actual_qty,
+			});
+
+			const $pill = $item.find(".indicator-pill");
+			$pill.removeClass("green orange red").addClass(indicator_color).text(qty_to_display);
+
+			$item.find(".item-qty-available").text(is_stock_item ? qty_to_display : "Non stock item");
+		});
+	}
+
+	async reload_items_from_server({ delay_ms = 0 } = {}) {
+		if (delay_ms > 0) {
+			await new Promise((resolve) => setTimeout(resolve, delay_ms));
+		}
+
+		this.start_item_loading_animation();
+
+		try {
+			const search_term = (this.search_field?.get_value?.() || "").toLowerCase();
+			const { message } = await this.get_items({ search_term });
+			const { items = [], barcode } = message || {};
+
+			const selling_price_list = this.events.get_frm().doc.selling_price_list;
+			if (search_term && !barcode) {
+				this.search_index = this.search_index || {};
+				this.search_index[selling_price_list] = this.search_index[selling_price_list] || {};
+				this.search_index[selling_price_list][search_term] = items;
+			}
+
+			this.items = items;
+			this.render_item_list(items);
+		} finally {
+			this.stop_item_loading_animation();
+		}
 	}
 
 	handle_broken_image($img) {

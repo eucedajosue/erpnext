@@ -106,11 +106,21 @@ class StockReconciliation(StockController):
 					)
 
 	def on_submit(self):
-		self.make_bundle_for_current_qty()
-		self.make_bundle_using_old_serial_batch_fields()
-		self.update_stock_ledger()
+		self.run_on_changed_items(self.make_bundle_for_current_qty)
+		self.run_on_changed_items(self.make_bundle_using_old_serial_batch_fields)
+		self.run_on_changed_items(self.update_stock_ledger)
 		self.make_gl_entries()
 		self.repost_future_sle_and_gle()
+
+	def run_on_changed_items(self, fn):
+		items_with_change = getattr(self, "items_with_change", self.items)
+		original_items = self.items
+
+		try:
+			self.items = items_with_change
+			return fn()
+		finally:
+			self.items = original_items
 
 	def on_cancel(self):
 		self.validate_reserved_stock()
@@ -555,17 +565,16 @@ class StockReconciliation(StockController):
 				return True
 
 		items = list(filter(lambda d: _changed(d), self.items))
+		self.items_with_change = items
 
-		if not items:
+		if self._action == "submit" and not items:
 			frappe.throw(
 				_("None of the items have any change in quantity or value."),
 				EmptyStockReconciliationItemsError,
 			)
 
-		elif len(items) != len(self.items):
-			self.items = items
-			self.change_idx = True
-			frappe.msgprint(_("Removed items with no change in quantity or value."))
+		elif self._action == "submit" and len(items) != len(self.items):
+			frappe.msgprint(_("Ignored items with no change in quantity or value while submitting."))
 
 	def calculate_difference_amount(self, item, item_dict):
 		qty_precision = item.precision("qty")
@@ -710,7 +719,8 @@ class StockReconciliation(StockController):
 		)
 
 		item_code_list, warehouse_list = [], []
-		for item in self.items:
+		items = self.items_with_change if self._action == "submit" else self.items
+		for item in items:
 			if item.qty == item.current_qty:
 				continue
 
@@ -751,7 +761,7 @@ class StockReconciliation(StockController):
 		from erpnext.stock.stock_ledger import get_previous_sle
 
 		sl_entries = []
-		for row in self.items:
+		for row in self.items_with_change if self.docstatus == 1 else self.items:
 			if not row.qty and not row.valuation_rate and not row.current_qty:
 				self.make_adjustment_entry(row, sl_entries)
 				continue

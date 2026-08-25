@@ -3,6 +3,7 @@ erpnext.PointOfSale.Controller = class {
 		this.wrapper = $(wrapper).find(".layout-main-section");
 		this.page = wrapper.page;
 		this.source_quotation = null;
+		this.last_submitted_item_codes = [];
 
 		this.check_opening_entry();
 	}
@@ -1284,8 +1285,18 @@ erpnext.PointOfSale.Controller = class {
 					}
 				},
 
-				submit_invoice: () => {
+				submit_invoice: async () => {
+					const can_submit = await this.validate_serial_batch_bundle_before_submit();
+					if (!can_submit) {
+						frappe.utils.play_sound("error");
+						return;
+					}
+
 					this.frm.savesubmit().then(async (r) => {
+						this.last_submitted_item_codes = [
+							...new Set((r.doc.items || []).map((item) => item.item_code).filter(Boolean)),
+						];
+
 						if (this.source_quotation) {
 							await frappe.call({
 								method: "erpnext.selling.page.point_of_sale.point_of_sale.update_quotation_status_from_pos_invoice",
@@ -1302,10 +1313,55 @@ erpnext.PointOfSale.Controller = class {
 							indicator: "green",
 							message: __("POS invoice {0} created successfully", [r.doc.name]),
 						});
+					}).catch((error) => {
+						frappe.msgprint({
+							title: __("Could not submit invoice"),
+							indicator: "red",
+							message: error?.message || __("An unexpected error occurred while submitting."),
+						});
 					});
 				},
 			},
 		});
+	}
+
+	async validate_serial_batch_bundle_before_submit() {
+		const items = this.frm?.doc?.items || [];
+		const tracked_items = items.filter(
+			(item) => flt(item.qty) > 0 && (cint(item.has_serial_no) || cint(item.has_batch_no))
+		);
+
+		if (!tracked_items.length) return true;
+
+		const auto_create_bundle = await frappe.db.get_single_value(
+			"Stock Settings",
+			"auto_create_serial_and_batch_bundle_for_outward"
+		);
+		if (cint(auto_create_bundle)) return true;
+
+		const missing_bundle_items = tracked_items.filter((item) => !item.serial_and_batch_bundle);
+		if (!missing_bundle_items.length) return true;
+
+		const max_items_to_show = 5;
+		const missing_items_label = missing_bundle_items
+			.slice(0, max_items_to_show)
+			.map((item) => frappe.utils.escape_html(item.item_code))
+			.join(", ");
+		const more_count = missing_bundle_items.length - max_items_to_show;
+
+		frappe.msgprint({
+			title: __("Serial/Batch Bundle required"),
+			indicator: "orange",
+			message: __(
+				"Serial and Batch Bundle is missing for: {0}{1}. Enable <b>Auto Create Serial and Batch Bundle</b> in Stock Settings.",
+				[
+					missing_items_label,
+					more_count > 0 ? __(" and {0} more", [more_count]) : "",
+				]
+			),
+		});
+
+		return false;
 	}
 
 	init_recent_order_list() {
@@ -1362,12 +1418,20 @@ erpnext.PointOfSale.Controller = class {
 					});
 				},
 				new_order: () => {
+					const submitted_item_codes = [
+						...new Set((this.last_submitted_item_codes || []).filter(Boolean)),
+					];
+					this.last_submitted_item_codes = [];
+
 					frappe.run_serially([
 						() => frappe.dom.freeze(),
 						() => this.make_new_invoice(),
 						() => this.toggle_components(true),
 						() => frappe.dom.unfreeze(),
-					]);
+					]).then(() => {
+						if (!submitted_item_codes.length) return;
+						this.sync_submitted_items_stock_for_new_order(submitted_item_codes);
+					});
 				},
 				open_in_form_view: (doctype, name) => {
 					frappe.run_serially([
@@ -1378,6 +1442,19 @@ erpnext.PointOfSale.Controller = class {
 				},
 			},
 		});
+	}
+
+	async sync_submitted_items_stock_for_new_order(item_codes = []) {
+		item_codes = [...new Set((item_codes || []).filter(Boolean))];
+		if (!item_codes.length || !this.item_selector) return;
+
+		if (typeof this.item_selector.refresh_available_qty_for_items !== "function") return;
+
+		try {
+			await this.item_selector.refresh_available_qty_for_items(item_codes);
+		} catch (error) {
+			console.warn("POS stock sync after New Order failed", error);
+		}
 	}
 
 	toggle_recent_order_list(show) {
