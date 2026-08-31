@@ -21275,7 +21275,7 @@ msgstr "Alimentación, bebidas y tabaco"
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
 msgid "Foot"
-msgstr "Pie"
+msgstr ""
 
 #. Name of a UOM
 #: erpnext/setup/setup_wizard/data/uom_data.json
