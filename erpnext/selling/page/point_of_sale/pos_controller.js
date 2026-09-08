@@ -1699,6 +1699,10 @@ erpnext.PointOfSale.Controller = class {
 		let item_row = null;
 		if (name) {
 			item_row = this.frm.doc.items.find((i) => i.name == name);
+		} else if (this.settings.group_same_items === 0) {
+			// user has chosen to always insert a new row instead of
+			// grouping the item into an existing cart row
+			item_row = null;
 		} else {
 			// if item is clicked twice from item selector
 			// then "item_code, batch_no, uom, rate" will help in getting the exact item
