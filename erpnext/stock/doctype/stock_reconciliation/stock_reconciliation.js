@@ -71,6 +71,10 @@ frappe.ui.form.on("Stock Reconciliation", {
 			frm.add_custom_button(__("Fetch Items from Warehouse"), function () {
 				frm.events.get_items(frm);
 			});
+
+			frm.add_custom_button(__("Remove Items without Difference"), function () {
+				frm.events.remove_items_without_difference(frm);
+			});
 		}
 
 		if (frm.doc.company) {
@@ -186,6 +190,35 @@ frappe.ui.form.on("Stock Reconciliation", {
 			},
 			__("Get Items"),
 			__("Update")
+		);
+	},
+
+	remove_items_without_difference(frm) {
+		let items = frm.doc.items || [];
+		let items_with_difference = items.filter((item) => {
+			return flt(item.quantity_difference) !== 0 || flt(item.amount_difference) !== 0;
+		});
+
+		let removed_count = items.length - items_with_difference.length;
+
+		if (!removed_count) {
+			frappe.msgprint(__("No items without difference found."));
+			return;
+		}
+
+		frappe.confirm(
+			__("This will remove {0} item(s) with no quantity or amount difference. Continue?", [
+				removed_count,
+			]),
+			function () {
+				frm.doc.items = items_with_difference;
+				frm.refresh_field("items");
+				frm.dirty();
+				frappe.show_alert({
+					message: __("Removed {0} item(s) without difference", [removed_count]),
+					indicator: "green",
+				});
+			}
 		);
 	},
 
