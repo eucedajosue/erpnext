@@ -283,7 +283,10 @@ erpnext.PointOfSale.Controller = class {
 		this.page.add_menu_item(__("Open Form View"), this.open_form_view.bind(this), false, "Ctrl+F");
 		this.page.add_menu_item(
 			__("Remove Item Tax Templates"),
-			this.remove_item_tax_templates.bind(this)
+			() => this.remove_item_tax_templates(false)
+		);
+		this.page.add_menu_item(__("Remove Item Tax Templates (Base Price)"), () =>
+			this.remove_item_tax_templates(true)
 		);
 		this.page.add_menu_item(__("Close the POS"), this.close_pos.bind(this), false, "Shift+Ctrl+C");
 	}
@@ -1088,7 +1091,24 @@ erpnext.PointOfSale.Controller = class {
 		]);
 	}
 
-	async remove_item_tax_templates() {
+	get_item_tax_percent(item) {
+		let item_tax_rate = {};
+		try {
+			item_tax_rate = JSON.parse(item.item_tax_rate || "{}");
+		} catch (e) {
+			item_tax_rate = {};
+		}
+
+		let percent = 0;
+		for (const tax of this.frm.doc.taxes || []) {
+			if (tax.charge_type !== "On Net Total") continue;
+			const rate = item_tax_rate[tax.account_head];
+			percent += flt(rate !== undefined ? rate : tax.rate);
+		}
+		return percent;
+	}
+
+	async remove_item_tax_templates(base_price = false) {
 		if (!this.$components_wrapper.is(":visible")) return;
 
 		const items = this.frm?.doc?.items || [];
@@ -1104,17 +1124,32 @@ erpnext.PointOfSale.Controller = class {
 		}
 
 		frappe.confirm(
-			__("This will remove Item Tax Template from all items in this invoice. Continue?"),
+			base_price
+				? __(
+						"This will remove Item Tax Template from all items in this invoice and set the rate to the base price (tax excluded). Continue?"
+				  )
+				: __("This will remove Item Tax Template from all items in this invoice. Continue?"),
 			async () => {
 				frappe.dom.freeze();
 				try {
 					for (const item of items_with_template) {
-						await frappe.model.set_value(
-							item.doctype || "Sales Invoice Item",
-							item.name,
-							"item_tax_template",
-							""
-						);
+						const doctype = item.doctype || "Sales Invoice Item";
+						const tax_percent = base_price ? this.get_item_tax_percent(item) : 0;
+						const current_rate = flt(item.rate);
+
+						if (base_price && tax_percent) {
+							await frappe.model.set_value(
+								doctype,
+								item.name,
+								"rate",
+								flt(current_rate / (1 + tax_percent / 100), precision("rate", item))
+							);
+							// the rate handler re-fetches the item tax template asynchronously;
+							// wait for it so the template is cleared afterwards
+							await new Promise((resolve) => frappe.after_ajax(resolve));
+						}
+
+						await frappe.model.set_value(doctype, item.name, "item_tax_template", "");
 					}
 
 					if (typeof this.frm.calculate_taxes_and_totals === "function") {
