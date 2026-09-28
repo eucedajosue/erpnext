@@ -17,7 +17,7 @@ from frappe.website.website_generator import WebsiteGenerator
 
 import erpnext
 from erpnext.setup.utils import get_exchange_rate
-from erpnext.stock.doctype.item.item import get_item_details
+from erpnext.stock.doctype.item.item import _get_item_details
 from erpnext.stock.get_item_details import ItemDetailsCtx, get_conversion_factor, get_price_list_rate
 
 form_grid_templates = {"items": "templates/form_grid/item_grid.html"}
@@ -464,13 +464,14 @@ class BOM(WebsiteGenerator):
 		doc.set_status(save=True)
 
 	def set_fg_cost_allocation(self):
+		self.cost_allocation_per = flt(self.cost_allocation_per)
 		total_secondary_items_per = 0
 		own_cost = 0
 		for item in self.secondary_items:
 			if item.valuation_type in ("Valuation Rate", "Manual"):
 				item.cost_allocation_per = 0
 				own_cost += flt(item.cost)
-			total_secondary_items_per += item.cost_allocation_per
+			total_secondary_items_per += flt(item.cost_allocation_per)
 
 		if self.cost_allocation_per == 100 and total_secondary_items_per:
 			self.cost_allocation_per -= total_secondary_items_per
@@ -486,9 +487,9 @@ class BOM(WebsiteGenerator):
 			)
 
 	def validate_total_cost_allocation(self):
-		total_cost_allocation_per = self.cost_allocation_per
+		total_cost_allocation_per = flt(self.cost_allocation_per)
 		for item in self.secondary_items:
-			total_cost_allocation_per += item.cost_allocation_per
+			total_cost_allocation_per += flt(item.cost_allocation_per)
 
 		if total_cost_allocation_per != 100:
 			frappe.throw(_("Cost allocation between finished goods and secondary items should equal 100%"))
@@ -498,7 +499,7 @@ class BOM(WebsiteGenerator):
 		self.manage_default_bom()
 
 	def get_item_det(self, item_code):
-		item = get_item_details(item_code)
+		item = _get_item_details(item_code)
 
 		if not item:
 			frappe.throw(_("Item: {0} does not exist in the system").format(item_code))
@@ -841,6 +842,19 @@ class BOM(WebsiteGenerator):
 				)
 			)
 
+		bom_items = {self.item, *items}
+		bom_items.update(d.item_code for d in self.get("secondary_items"))
+		bom_items.update(d.finished_good for d in self.get("operations") if d.finished_good)
+
+		if disabled_items := frappe.db.get_all(
+			"Item", filters={"item_code": ("in", list(bom_items)), "disabled": 1}, pluck="name"
+		):
+			frappe.throw(
+				_("Disabled Item {0} cannot be used in BOMs.").format(
+					", ".join(get_link_to_form("Item", item) for item in disabled_items)
+				)
+			)
+
 	def check_recursion(self, bom_list=None):
 		"""Check whether recursion occurs in any bom"""
 
@@ -891,7 +905,7 @@ class BOM(WebsiteGenerator):
 		for row in items:
 			row = parse_json(row)
 
-			row.update(get_item_details(row.get("item_code")))
+			row.update(_get_item_details(row.get("item_code")))
 			row.operation_row_id = operation_row_id
 
 			item_row = self.get_item_data(row.item_code, operation_row_id)
@@ -1091,7 +1105,7 @@ class BOM(WebsiteGenerator):
 
 	def calculate_secondary_items_costs(self, save=False):
 		"""Valuation Rate and Manual rows carry their own cost, deducted from the raw
-		material cost; the % of FG Cost rows split the remainder by their percentage."""
+		material cost; the % of Component Cost rows split the remainder by their percentage."""
 		total_sm_cost = 0
 		base_total_sm_cost = 0
 		precision = self.precision("raw_material_cost")
@@ -1099,7 +1113,7 @@ class BOM(WebsiteGenerator):
 
 		for d in self.get("secondary_items"):
 			if d.valuation_type not in ("Valuation Rate", "Manual"):
-				d.cost = flt(allocation_basis * (d.cost_allocation_per / 100), precision)
+				d.cost = flt(allocation_basis * (flt(d.cost_allocation_per) / 100), precision)
 				d.base_cost = flt(d.cost * self.conversion_rate, precision)
 				if save:
 					d.db_update()
@@ -1472,7 +1486,11 @@ def get_bom_items_as_dict(
 	fetch_secondary_items=0,
 	include_non_stock_items=False,
 	fetch_qty_in_stock_uom=True,
+	ignore_permissions=True,
 ):
+	if not ignore_permissions:
+		frappe.has_permission("BOM", "read", doc=bom, throw=True)
+
 	item_dict = {}
 
 	group_by_cond = "group by item_code, stock_uom, operation"
@@ -1575,6 +1593,7 @@ def get_bom_items_as_dict(
 				fetch_secondary_items=fetch_secondary_items,
 				include_non_stock_items=include_non_stock_items,
 				fetch_qty_in_stock_uom=fetch_qty_in_stock_uom,
+				ignore_permissions=ignore_permissions,
 			)
 
 			for k, v in data.items():
@@ -1603,7 +1622,11 @@ def get_bom_items_as_dict(
 
 @frappe.whitelist()
 def get_bom_items(bom, company, qty=1, fetch_exploded=1):
-	items = get_bom_items_as_dict(bom, company, qty, fetch_exploded, include_non_stock_items=True).values()
+	frappe.has_permission("BOM", "read", doc=bom, throw=True)
+
+	items = get_bom_items_as_dict(
+		bom, company, qty, fetch_exploded, include_non_stock_items=True, ignore_permissions=False
+	).values()
 	items = list(items)
 	items.sort(key=functools.cmp_to_key(lambda a, b: a.item_code > b.item_code and 1 or -1))
 	return items
@@ -1919,6 +1942,9 @@ def get_bom_diff(bom1, bom2):
 	doc1 = frappe.get_doc("BOM", bom1)
 	doc2 = frappe.get_doc("BOM", bom2)
 
+	doc1.check_permission()
+	doc2.check_permission()
+
 	out = get_diff(doc1, doc2)
 	out.row_changed = []
 	out.added = []
@@ -2026,7 +2052,7 @@ def make_variant_bom(source_name, bom_no, item, variant_items, target_doc=None):
 		doc.item = item
 		doc.quantity = 1
 
-		item_data = get_item_details(item)
+		item_data = _get_item_details(item)
 		doc.update(
 			{
 				"item_name": item_data.item_name,

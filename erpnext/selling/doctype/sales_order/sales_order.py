@@ -14,7 +14,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.model.utils import get_fetch_values
 from frappe.query_builder import Case
-from frappe.query_builder.functions import Abs, Sum
+from frappe.query_builder.functions import Abs, IfNull, Round, Sum
 from frappe.utils import add_days, cint, cstr, flt, get_link_to_form, getdate, nowdate, parse_json, strip_html
 from pypika import Order
 
@@ -537,7 +537,7 @@ class SalesOrder(SellingController):
 			update_coupon_code_count(self.coupon_code, "used")
 
 		if self.get("reserve_stock") and not self.get("is_subcontracted"):
-			self.create_stock_reservation_entries()
+			self._create_stock_reservation_entries()
 
 	def delete_removed_delivery_schedule_items(self):
 		items = [d.name for d in self.get("items")]
@@ -859,8 +859,21 @@ class SalesOrder(SellingController):
 		from_voucher_type: Literal["Pick List", "Purchase Receipt"] = None,
 		notify=True,
 	) -> None:
-		"""Creates Stock Reservation Entries for Sales Order Items."""
+		"""Whitelisted entry point: authorise the caller, then reserve."""
+		self.check_permission("write")
+		self._create_stock_reservation_entries(items_details, from_voucher_type, notify)
 
+	def _create_stock_reservation_entries(
+		self,
+		items_details: list[dict] | None = None,
+		from_voucher_type: Literal["Pick List", "Purchase Receipt"] = None,
+		notify=True,
+	) -> None:
+		"""Creates Stock Reservation Entries for Sales Order Items.
+
+		Internal: no permission check. Pick List and Purchase Receipt reserve against someone
+		else's Sales Order, and no role that creates either holds Sales Order write.
+		"""
 		from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import (
 			create_stock_reservation_entries_for_so_items as create_stock_reservation_entries,
 		)
@@ -875,6 +888,8 @@ class SalesOrder(SellingController):
 	@frappe.whitelist()
 	def cancel_stock_reservation_entries(self, sre_list=None, notify=True) -> None:
 		"""Cancel Stock Reservation Entries for Sales Order Items."""
+		# same guard as the sibling method on Pick List; run_doc_method only gates on `read`
+		self.check_permission("write")
 
 		from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import (
 			cancel_stock_reservation_entries,
@@ -998,14 +1013,18 @@ def is_enable_cutoff_date_on_bulk_delivery_note_creation():
 	return frappe.get_single_value("Selling Settings", "enable_cutoff_date_on_bulk_delivery_note_creation")
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def close_or_unclose_sales_orders(names, status):
-	if not frappe.has_permission("Sales Order", "write"):
-		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	frappe.has_permission("Sales Order", "write", throw=True)
 
 	names = json.loads(names)
 	for name in names:
-		so = frappe.get_lazy_doc("Sales Order", name)
+		if not isinstance(name, str):
+			frappe.throw(_("Invalid name"), frappe.PermissionError)
+
+		# the check above is doctype level, so on its own it lets a caller restricted to one company close
+		# another company's orders. Matches what update_status() already does.
+		so = frappe.get_lazy_doc("Sales Order", name, check_permission="submit")
 		if so.docstatus == 1:
 			if status == "Closed":
 				if so.status not in ("Cancelled", "Closed") and (
@@ -1891,7 +1910,7 @@ def make_production_plan(source_name, target_doc=None):
 	return production_plan
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def update_status(status, name):
 	so = frappe.get_doc("Sales Order", name, check_permission="submit")
 	so.update_status(status)
@@ -1965,7 +1984,7 @@ def make_inter_company_purchase_order(source_name, target_doc=None):
 
 
 @frappe.whitelist()
-def create_pick_list(source_name, target_doc=None):
+def create_pick_list(source_name: str, target_doc: str | dict | Document | None = None):
 	from erpnext.stock.doctype.packed_item.packed_item import is_product_bundle
 
 	def validate_sales_order():
@@ -2040,7 +2059,8 @@ def create_pick_list(source_name, target_doc=None):
 
 	doc.purpose = "Delivery"
 
-	doc.set_item_locations()
+	if not doc.pick_manually:
+		doc.set_item_locations()
 
 	return doc
 
@@ -2200,8 +2220,26 @@ def get_mapped_subcontracting_inward_order(source_name, target_doc=None):
 	return target_doc
 
 
+def get_pending_qty_criterion(sales_order_item):
+	"""Mirror the mapper's pending quantity check."""
+	invoice_item = qb.DocType("Sales Invoice Item")
+	billed_qty = (
+		qb.from_(invoice_item)
+		.select(IfNull(Sum(invoice_item.qty), 0))
+		.where((invoice_item.docstatus == 1) & (invoice_item.so_detail == sales_order_item.name))
+	)
+
+	qty_precision = frappe.get_precision("Sales Order Item", "qty")
+	has_unbilled_ordered_qty = Round(sales_order_item.qty - billed_qty, qty_precision) > 0
+	has_unbilled_delivered_qty = (
+		Round(sales_order_item.qty - sales_order_item.returned_qty - billed_qty, qty_precision) > 0
+	) | (Round(sales_order_item.delivered_qty - billed_qty, qty_precision) > 0)
+
+	return has_unbilled_ordered_qty & has_unbilled_delivered_qty
+
+
 def get_potentially_billable_item_criterion(sales_order, sales_order_item, item):
-	"""Return the amount check for UI candidates. The mapper checks pending quantity."""
+	"""Return the row level checks the Sales Invoice mapper applies."""
 	global_allowance = flt(frappe.get_cached_value("Accounts Settings", None, "over_billing_allowance"))
 	allowance = (
 		Case().when(item.over_billing_allowance != 0, item.over_billing_allowance).else_(global_allowance)
@@ -2211,8 +2249,11 @@ def get_potentially_billable_item_criterion(sales_order, sales_order_item, item)
 		Abs(sales_order_item.billed_amt) < Abs(sales_order_item.amount) * (1 + allowance / 100)
 	)
 	is_unit_price_row = (sales_order.has_unit_price_items == 1) & (sales_order_item.qty == 0)
+	is_billable_row = (
+		(sales_order_item.qty != 0) & has_amount_headroom & get_pending_qty_criterion(sales_order_item)
+	)
 
-	return is_unit_price_row | ((sales_order_item.qty != 0) & has_amount_headroom)
+	return is_unit_price_row | is_billable_row
 
 
 def has_potentially_billable_items(sales_order: str) -> bool:
@@ -2262,7 +2303,7 @@ def get_potentially_billable_sales_orders(
 
 	query = frappe.qb.get_query(
 		so,
-		fields=[so.name, so.customer, so.transaction_date],
+		fields=[so.name, so.customer, so.transaction_date, so.creation],
 		filters=filters,
 		or_filters=or_filters,
 		ignore_permissions=False,
@@ -2275,7 +2316,8 @@ def get_potentially_billable_sales_orders(
 		.on(item.name == so_item.item_code)
 		.where(get_potentially_billable_item_criterion(so, so_item, item))
 		.distinct()
-		.orderby(so.transaction_date, order=Order.desc)
+		.orderby(so.transaction_date, order=Order.asc)
+		.orderby(so.creation, order=Order.asc)
 		.limit(cint(page_len))
 		.offset(cint(start))
 		.run(as_dict=True)
