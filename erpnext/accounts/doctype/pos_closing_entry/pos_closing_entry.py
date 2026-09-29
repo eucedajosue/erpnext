@@ -187,10 +187,6 @@ class POSClosingEntry(StatusUpdater):
 				)
 			if sales_invoice.docstatus != 1:
 				invalid_row.setdefault("msg", []).append(_("Sales Invoice is not submitted"))
-			if sales_invoice.owner != self.user:
-				invalid_row.setdefault("msg", []).append(
-					_("Sales Invoice isn't created by user {}").format(frappe.bold(self.owner))
-				)
 
 			if invalid_row.get("msg"):
 				invalid_rows.append(invalid_row)
@@ -466,8 +462,7 @@ def build_invoice_query(invoice_doctype, user, pos_profile, start, end):
 			ConstantColumn(invoice_doctype).as_("doctype"),
 		)
 		.where(
-			(InvoiceDocType.owner == user)
-			& (InvoiceDocType.docstatus == 1)
+			(InvoiceDocType.docstatus == 1)
 			& (InvoiceDocType.is_pos == 1)
 			& (InvoiceDocType.pos_profile == pos_profile)
 			& (
@@ -478,8 +473,12 @@ def build_invoice_query(invoice_doctype, user, pos_profile, start, end):
 	)
 
 	if invoice_doctype == "POS Invoice":
-		query = query.where(fn.IfNull(InvoiceDocType.consolidated_invoice, "").eq(""))
+		query = query.where(
+			(InvoiceDocType.owner == user) & fn.IfNull(InvoiceDocType.consolidated_invoice, "").eq("")
+		)
 	else:
+		# Sales Invoices may be created by another user (e.g. via API) and paid at the POS;
+		# only one opening entry can be open per POS Profile, so no owner filter is needed.
 		query = query.where(
 			(InvoiceDocType.is_created_using_pos == 1)
 			& fn.IfNull(InvoiceDocType.pos_closing_entry, "").eq("")
