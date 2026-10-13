@@ -3,6 +3,7 @@
 
 import json
 import time
+from unittest.mock import patch
 from uuid import uuid4
 
 import frappe
@@ -1129,6 +1130,35 @@ class TestStockLedgerEntry(ERPNextTestSuite, StockTestMixin):
 		backdated.cancel()
 		self.assertEqual([1], ordered_qty_after_transaction())
 
+	def test_repost_does_not_revive_entry_cancelled_midway(self):
+		from erpnext.stock.stock_ledger import update_entries_after
+
+		item_code = make_item().name
+		warehouse = "_Test Warehouse - _TC"
+		make_stock_entry(item_code=item_code, target=warehouse, qty=10, rate=100)
+		second = make_stock_entry(item_code=item_code, target=warehouse, qty=5, rate=120)
+		sle_name = frappe.db.get_value("Stock Ledger Entry", {"voucher_no": second.name, "is_cancelled": 0})
+
+		process_sle = update_entries_after.process_sle
+
+		def cancel_while_reposting(obj, sle):
+			# the repost has already read this entry as active; the user cancels it now
+			if sle.name == sle_name:
+				frappe.db.set_value("Stock Ledger Entry", sle_name, "is_cancelled", 1)
+			return process_sle(obj, sle)
+
+		with patch.object(update_entries_after, "process_sle", cancel_while_reposting):
+			update_entries_after(
+				{
+					"item_code": item_code,
+					"warehouse": warehouse,
+					"posting_date": "1900-01-01",
+					"posting_time": "00:01",
+				}
+			)
+
+		self.assertEqual(frappe.db.get_value("Stock Ledger Entry", sle_name, "is_cancelled"), 1)
+
 	def test_timestamp_clash(self):
 		item = make_item().name
 		warehouse = "_Test Warehouse - _TC"
@@ -1711,6 +1741,134 @@ class TestStockLedgerEntry(ERPNextTestSuite, StockTestMixin):
 		self.assertEqual(
 			flt(frappe.db.get_value("Bin", {"item_code": fg, "warehouse": warehouse}, "actual_qty")), 615.0
 		)
+
+	def test_previous_sle_includes_backdated_entry_created_later(self):
+		"""A backdated SLE created after a later-posted one (concurrent submits) must still be its previous SLE."""
+		from erpnext.stock.stock_ledger import get_previous_sle_of_current_voucher
+
+		item = make_item().name
+		warehouse = "_Test Warehouse - _TC"
+
+		make_stock_entry(
+			item_code=item,
+			to_warehouse=warehouse,
+			qty=100,
+			rate=10,
+			posting_date="2026-01-06",
+			posting_time="10:00:00",
+		)
+		issue = make_stock_entry(
+			item_code=item,
+			from_warehouse=warehouse,
+			qty=5,
+			posting_date="2026-01-06",
+			posting_time="10:17:20",
+		)
+		# posted before the issue but created after it, as when both are submitted at the same moment
+		receipt = make_stock_entry(
+			item_code=item,
+			to_warehouse=warehouse,
+			qty=10,
+			rate=10,
+			posting_date="2026-01-06",
+			posting_time="10:17:09",
+		)
+
+		issue_sle = frappe.db.get_value(
+			"Stock Ledger Entry",
+			{"voucher_no": issue.name, "is_cancelled": 0},
+			[
+				"name",
+				"item_code",
+				"warehouse",
+				"posting_date",
+				"posting_time",
+				"posting_datetime",
+				"creation",
+			],
+			as_dict=True,
+		)
+		receipt_sle = frappe.db.get_value(
+			"Stock Ledger Entry", {"voucher_no": receipt.name, "is_cancelled": 0}
+		)
+		self.assertGreater(
+			frappe.db.get_value("Stock Ledger Entry", receipt_sle, "creation"), issue_sle.creation
+		)
+
+		previous_sle = get_previous_sle_of_current_voucher(
+			frappe._dict(
+				{
+					"item_code": item,
+					"warehouse": warehouse,
+					"posting_date": issue_sle.posting_date,
+					"posting_time": issue_sle.posting_time,
+					"posting_datetime": issue_sle.posting_datetime,
+					"creation": issue_sle.creation,
+					"sle_id": issue_sle.name,
+				}
+			)
+		)
+		self.assertEqual(previous_sle.name, receipt_sle)
+		self.assertEqual(previous_sle.qty_after_transaction, 110)
+
+	def test_repost_decision_ignores_stale_future_sle_result(self):
+		"""A concurrent later-posted SLE committed after this voucher's snapshot must still trigger a repost."""
+		from erpnext.controllers.stock_controller import future_sle_exists
+
+		item = make_item().name
+		warehouse = "_Test Warehouse - _TC"
+
+		make_stock_entry(
+			item_code=item,
+			to_warehouse=warehouse,
+			qty=100,
+			rate=10,
+			posting_date="2026-01-06",
+			posting_time="10:00:00",
+		)
+		make_stock_entry(
+			item_code=item,
+			from_warehouse=warehouse,
+			qty=5,
+			posting_date="2026-01-06",
+			posting_time="10:17:20",
+		)
+		receipt = make_stock_entry(
+			item_code=item,
+			to_warehouse=warehouse,
+			qty=10,
+			rate=10,
+			posting_date="2026-01-06",
+			posting_time="10:17:09",
+		)
+
+		def repost_entries():
+			return frappe.get_all(
+				"Repost Item Valuation",
+				filters={"docstatus": 1},
+				or_filters={"voucher_no": receipt.name, "item_code": item},
+				pluck="name",
+			)
+
+		existing = set(repost_entries())
+
+		# the snapshot read taken before the later entry committed left "no future SLE" in the cache
+		frappe.local.future_sle = {(receipt.doctype, receipt.name): frappe._dict({})}
+		receipt.repost_future_sle_and_gle()
+
+		self.assertTrue(set(repost_entries()) - existing)
+
+		args = frappe._dict(
+			{
+				"voucher_type": receipt.doctype,
+				"voucher_no": receipt.name,
+				"posting_date": receipt.posting_date,
+				"posting_time": receipt.posting_time,
+			}
+		)
+		self.assertTrue(future_sle_exists(args, for_update=True))
+		if frappe.db.db_type == "mariadb":
+			self.assertIn("for update", frappe.db.last_query.lower())
 
 
 def create_repack_entry(**args):

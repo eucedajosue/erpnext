@@ -246,6 +246,21 @@ class TestPaymentEntry(ERPNextTestSuite):
 		outstanding_amount = flt(frappe.db.get_value("Sales Invoice", pi.name, "outstanding_amount"))
 		self.assertEqual(outstanding_amount, 0)
 
+	def test_allocation_equal_to_outstanding_at_precision_is_allowed(self):
+		pe = frappe.new_doc("Payment Entry")
+		pe.payment_type = "Pay"
+		pe.party_type = "Employee"
+		pe.append(
+			"references",
+			{
+				"reference_doctype": "Employee Advance",
+				"reference_name": "_Test Precision Boundary",
+				"outstanding_amount": 259.99999039999966,
+				"allocated_amount": 260.0,
+			},
+		)
+		pe.validate_allocated_amount()
+
 	def test_payment_against_sales_invoice_to_check_status(self):
 		si = create_sales_invoice(
 			customer="_Test Customer USD",
@@ -1419,6 +1434,40 @@ class TestPaymentEntry(ERPNextTestSuite):
 		self.assertEqual(references[2].voucher_no, si2.name)
 		self.assertEqual(references[1].payment_term, "Basic Amount Receivable")
 		self.assertEqual(references[2].payment_term, "Tax Receivable")
+
+	def test_negative_outstanding_invoice_currency_multicurrency(self):
+		"""
+		A foreign-currency invoice whose party account is in company currency should report its
+		negative outstanding amount in the account's currency, not the invoice's own currency.
+		"""
+		party_account_currency = frappe.db.get_value("Account", "Debtors - _TC", "account_currency")
+
+		credit_note = create_sales_invoice(
+			customer="_Test Customer",
+			currency="USD",
+			conversion_rate=50,
+			qty=-1,
+			is_return=1,
+		)
+
+		outstanding_amount = flt(frappe.db.get_value("Sales Invoice", credit_note.name, "outstanding_amount"))
+		self.assertLess(outstanding_amount, 0)
+
+		args = {
+			"posting_date": nowdate(),
+			"company": "_Test Company",
+			"party_type": "Customer",
+			"party": "_Test Customer",
+			"party_account": "Debtors - _TC",
+			"get_outstanding_invoices": True,
+		}
+		references = get_outstanding_reference_documents(args)
+
+		reference = next(r for r in references if r.voucher_no == credit_note.name)
+		self.assertEqual(reference.currency, party_account_currency)
+		self.assertEqual(
+			reference.invoice_amount, credit_note.base_rounded_total or credit_note.base_grand_total
+		)
 
 	def test_receive_payment_from_payable_party_type(self):
 		"""

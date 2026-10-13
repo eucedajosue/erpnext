@@ -38,6 +38,7 @@ class StockSettings(Document):
 		auto_create_serial_and_batch_bundle_for_outward: DF.Check
 		auto_indent: DF.Check
 		auto_insert_price_list_rate_if_missing: DF.Check
+		auto_map_raw_materials_to_finished_goods: DF.Check
 		auto_reserve_serial_and_batch: DF.Check
 		auto_reserve_stock: DF.Check
 		auto_reserve_stock_for_sales_order_on_purchase: DF.Check
@@ -148,10 +149,20 @@ class StockSettings(Document):
 			doc_before_save.enable_serial_and_batch_no_for_item
 			and not self.enable_serial_and_batch_no_for_item
 		):
-			if frappe.get_all("Serial and Batch Bundle", filters={"docstatus": 1}, limit=1, pluck="name"):
+			if frappe.db.exists("Serial and Batch Bundle", {"docstatus": 1}):
 				frappe.throw(
 					_(
 						"Cannot disable Serial and Batch No for Item, as there are existing records for serial / batch."
+					)
+				)
+
+			# settings hidden by this flag still apply to items that track serial / batch
+			if frappe.db.exists("Item", {"has_serial_no": 1}) or frappe.db.exists(
+				"Item", {"has_batch_no": 1}
+			):
+				frappe.throw(
+					_(
+						"Cannot disable Serial and Batch No for Item, as there are items with serial / batch enabled."
 					)
 				)
 

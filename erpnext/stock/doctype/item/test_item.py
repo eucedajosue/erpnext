@@ -953,6 +953,32 @@ class TestItem(ERPNextTestSuite):
 		except frappe.ValidationError as e:
 			self.fail(f"stock item considered non-stock item: {e}")
 
+	def test_serial_and_batch_flags_blocked_when_not_activated(self):
+		serial_item = make_item("_Test Serial Activation Item", {"has_serial_no": 1})
+		batch_item = make_item("_Test Batch Activation Item", {"has_batch_no": 1, "create_new_batch": 1})
+		plain_item = make_item("_Test Serial Batch Plain Item")
+
+		# set directly as test data already has serial / batch records blocking the settings save
+		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 0)
+		self.addCleanup(
+			frappe.db.set_single_value, "Stock Settings", "enable_serial_and_batch_no_for_item", 1
+		)
+
+		for fieldname in ("has_serial_no", "has_batch_no"):
+			with self.assertRaisesRegex(frappe.ValidationError, "Activate Serial / Batch No for Item"):
+				make_item(f"_Test New {fieldname} Item", {fieldname: 1})
+
+			item = frappe.get_doc("Item", plain_item.name)
+			item.set(fieldname, 1)
+			with self.assertRaisesRegex(frappe.ValidationError, "Activate Serial / Batch No for Item"):
+				item.save()
+
+		# items already tracking serial / batch stay editable
+		for item in (serial_item, batch_item):
+			item.reload()
+			item.description = "Updated after deactivation"
+			item.save()
+
 	@ERPNextTestSuite.change_settings("Stock Settings", {"item_naming_by": "Naming Series"})
 	def test_autoname_series(self):
 		item = frappe.new_doc("Item")
@@ -1209,6 +1235,55 @@ class TestItem(ERPNextTestSuite):
 		doc.has_serial_no = 0
 		doc.save()
 		self.assertEqual(frappe.db.get_value("Item", item, "has_serial_no"), 0)
+
+	@ERPNextTestSuite.change_settings("Global Defaults", {"default_company": "_Test Company"})
+	def test_opening_stock_for_serial_batch(self):
+		items = {
+			"Test Opening Stock for Serial No": {
+				"has_serial_no": 1,
+				"opening_stock": 5,
+				"serial_no_series": "SN-TOPN-.####",
+				"valuation_rate": 100,
+			},
+			"Test Opening Stock for Batch No": {
+				"has_batch_no": 1,
+				"opening_stock": 5,
+				"batch_number_series": "BCH-TOPN-.####",
+				"valuation_rate": 100,
+				"create_new_batch": 1,
+			},
+			"Test Opening Stock for Serial and Batch No": {
+				"has_serial_no": 1,
+				"has_batch_no": 1,
+				"opening_stock": 5,
+				"batch_number_series": "SN-BCH-TOPN-.####",
+				"serial_no_series": "BCH-SN-TOPN-.####",
+				"valuation_rate": 100,
+				"create_new_batch": 1,
+			},
+		}
+
+		for item_code, properties in items.items():
+			make_item(item_code, properties)
+
+			stock_entry_bundle = frappe.db.get_value(
+				"Stock Entry Detail", {"docstatus": 1, "item_code": item_code}, "serial_and_batch_bundle"
+			)
+			self.assertFalse(stock_entry_bundle)
+
+			serial_and_batch_bundle = frappe.db.get_value(
+				"Stock Ledger Entry",
+				{
+					"voucher_type": "Stock Reconciliation",
+					"is_cancelled": 0,
+					"item_code": item_code,
+				},
+				"serial_and_batch_bundle",
+			)
+			self.assertTrue(serial_and_batch_bundle)
+
+			sabb_qty = frappe.db.get_value("Serial and Batch Bundle", serial_and_batch_bundle, "total_qty")
+			self.assertEqual(abs(sabb_qty), properties["opening_stock"])
 
 
 def set_item_variant_settings(fields):

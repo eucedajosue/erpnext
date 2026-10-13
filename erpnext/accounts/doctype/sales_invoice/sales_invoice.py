@@ -482,6 +482,7 @@ class SalesInvoice(SellingController):
 			self.validate_standalone_serial_nos_customer()
 			self.update_stock_reservation_entries()
 			self.update_stock_ledger()
+			self.validate_produced_serial_nos_against_reservation()
 
 		self.split_asset_based_on_sale_qty()
 
@@ -721,6 +722,7 @@ class SalesInvoice(SellingController):
 				"second_source_field": "-1 * qty",
 				"second_join_field": "so_detail",
 				"extra_cond": """ and exists (select name from `tabSales Invoice` where name=`tabSales Invoice Item`.parent and update_stock=1 and is_return=1)""",
+				"second_source_extra_cond": """ and exists (select name from `tabDelivery Note` where name=`tabDelivery Note Item`.parent and is_return=1)""",
 			}
 		)
 
