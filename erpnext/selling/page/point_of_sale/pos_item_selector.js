@@ -443,12 +443,6 @@ toggle_group_and_items() {
 			</span>`
 		);
 
-		this.item_group_field.$wrapper.find(".link-btn").append(
-			`<a class="btn-clear" tabindex="-1" style="display: inline-block;" title="${__("Clear Link")}">
-				${frappe.utils.icon("x", "xs")}
-			</a>`
-		);
-
 		this.$clear_search_btn = this.search_field.$wrapper.find(".link-btn");
 
 		this.$clear_search_btn.on("click", "a", () => {
