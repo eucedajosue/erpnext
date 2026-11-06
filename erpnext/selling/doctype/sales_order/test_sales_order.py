@@ -36,10 +36,79 @@ from erpnext.stock.doctype.item.test_item import make_item
 from erpnext.stock.doctype.stock_entry.stock_entry_utils import make_stock_entry
 from erpnext.stock.get_item_details import get_bin_details
 from erpnext.stock.utils import InvalidWarehouseCompany
+from erpnext.tests.permission_test_utils import make_fenced_user
 from erpnext.tests.utils import ERPNextTestSuite
 
 
 class TestSalesOrder(ERPNextTestSuite):
+	def test_maximum_discount_for_percentage_amount_and_rate(self):
+		item = make_item(properties={"is_stock_item": 0, "max_discount": 10})
+		item_price = frappe.get_doc(
+			{
+				"doctype": "Item Price",
+				"item_code": item.name,
+				"price_list": "Standard Selling",
+				"price_list_rate": 100,
+			}
+		).insert()
+		user = make_fenced_user("max-discount@example.com", ["Sales User"])
+
+		with self.set_user(user):
+			for values in (
+				{"discount_percentage": 50},
+				{"discount_amount": 50},
+				{"rate": 50},
+				{"margin_type": "Percentage", "margin_rate_or_amount": 25, "discount_amount": 25},
+			):
+				with self.subTest(values=values):
+					order = make_sales_order(
+						item_list=[{"item_code": item.name, "qty": 1, **values}],
+						selling_price_list="Standard Selling",
+						do_not_save=True,
+					)
+					with self.assertRaisesRegex(frappe.ValidationError, "Maximum discount for Item"):
+						order.insert().submit()
+
+			for values, expected_rate in (
+				({"discount_percentage": 10}, 90),
+				({"discount_amount": 10}, 90),
+				({"rate": 90}, 90),
+				({"margin_type": "Percentage", "margin_rate_or_amount": 25, "discount_amount": 12.5}, 112.5),
+			):
+				with self.subTest(values=values):
+					order = make_sales_order(
+						item_list=[{"item_code": item.name, "qty": 1, **values}],
+						selling_price_list="Standard Selling",
+					)
+					self.assertEqual(order.docstatus, 1)
+					self.assertEqual(order.items[0].price_list_rate, 100)
+					self.assertEqual(order.items[0].rate, expected_rate)
+
+		item_price.price_list_rate = 0.06
+		item_price.save()
+		with self.set_user(user):
+			order = make_sales_order(
+				item_list=[{"item_code": item.name, "qty": 1, "discount_percentage": 10}],
+				selling_price_list="Standard Selling",
+			)
+			self.assertEqual(order.items[0].discount_amount, 0.01)
+			self.assertEqual(order.items[0].rate, 0.05)
+
+		for price_list_rate, rate in ((0, 50), (-100, -100)):
+			item_price.price_list_rate = price_list_rate
+			item_price.save()
+			with (
+				self.subTest(price_list_rate=price_list_rate),
+				self.change_settings("Selling Settings", {"allow_negative_rates_for_items": 1}),
+				self.set_user(user),
+			):
+				order = make_sales_order(
+					item_list=[{"item_code": item.name, "qty": 1, "rate": rate}],
+					selling_price_list="Standard Selling",
+				)
+				self.assertEqual(order.items[0].rate, rate)
+				self.assertEqual(order.items[0].discount_amount, 0)
+
 	@ERPNextTestSuite.change_settings(
 		"Stock Settings",
 		{
@@ -250,6 +319,20 @@ class TestSalesOrder(ERPNextTestSuite):
 		self.assertEqual(dn.doctype, "Delivery Note")
 		self.assertEqual(len(dn.get("items")), len(so.get("items")))
 
+	@ERPNextTestSuite.change_settings("Stock Settings", {"over_delivery_receipt_allowance": 0})
+	def test_over_delivery_of_bundle_is_blocked(self):
+		# a bundle parent is non-stock, but its components move real stock, so it must obey the limit
+		component = make_item(properties={"is_stock_item": 1}).name
+		make_stock_entry(item_code=component, target="_Test Warehouse - _TC", qty=50, rate=100)
+		bundle = make_item(properties={"is_stock_item": 0}).name
+		make_product_bundle(bundle, [component], qty=2)
+
+		so = make_sales_order(item_code=bundle, qty=2, warehouse="_Test Warehouse - _TC")
+
+		dn = make_delivery_note(so.name)
+		dn.items[0].qty = 5
+		self.assertRaises(frappe.ValidationError, dn.submit)
+
 	def test_make_production_plan(self):
 		from erpnext.manufacturing.doctype.production_plan.test_production_plan import make_bom
 
@@ -286,6 +369,26 @@ class TestSalesOrder(ERPNextTestSuite):
 
 		si1 = make_sales_invoice(so.name)
 		self.assertEqual(len(si1.get("items")), 0)
+
+	def test_billing_within_rounding_of_full_completes_order(self):
+		make_stock_entry(item_code="_Test Item", target="_Test Warehouse - _TC", qty=1, rate=100)
+		so = make_sales_order(qty=1, rate=1000000)
+
+		# 999999.99 / 1000000 rounds to 99.999999%, which already counts as fully billed
+		si = make_sales_invoice(so.name)
+		si.items[0].rate = 999999.99
+		si.insert()
+		si.submit()
+
+		so.reload()
+		self.assertEqual(so.per_billed, 100)
+		self.assertEqual(so.billing_status, "Fully Billed")
+		self.assertEqual(so.status, "To Deliver")
+
+		make_delivery_note(so.name).submit()
+
+		so.reload()
+		self.assertEqual(so.status, "Completed")
 
 	def test_make_sales_invoice_for_pending_qty_with_item_billing_allowance(self):
 		item = make_item(
@@ -1128,6 +1231,46 @@ class TestSalesOrder(ERPNextTestSuite):
 		)
 		self.assertRaises(frappe.ValidationError, update_child_qty_rate, "Sales Order", trans_item, so.name)
 
+	def test_update_child_qty_with_conversion_factor_after_delivery(self):
+		item = make_item(uoms=[{"uom": "Box", "conversion_factor": 5}])
+		sales_order = make_sales_order(item_code=item.item_code, qty=6, uom="Box")
+		create_dn_against_so(sales_order.name, 2)
+
+		row = sales_order.items[0]
+		trans_items = json.dumps(
+			[
+				{
+					"item_code": row.item_code,
+					"rate": row.rate,
+					"qty": 4,
+					"uom": row.uom,
+					"conversion_factor": 2,
+					"docname": row.name,
+				}
+			]
+		)
+
+		self.assertRaisesRegex(
+			frappe.ValidationError,
+			"Cannot set quantity less than delivered quantity",
+			update_child_qty_rate,
+			"Sales Order",
+			trans_items,
+			sales_order.name,
+		)
+
+	def test_update_child_preserves_conversion_factor_precision(self):
+		from erpnext.controllers.accounts_controller import update_child_item_uom_and_weight
+
+		item = make_item(properties={"stock_uom": "Kg"}, uoms=[{"uom": "Box", "conversion_factor": 2}])
+		sales_order = make_sales_order(item_code=item.item_code, qty=6, uom="Box")
+		conversion_factor = 1.123456789123
+		row = sales_order.items[0]
+
+		update_child_item_uom_and_weight(row, {"conversion_factor": conversion_factor})
+
+		self.assertEqual(row.conversion_factor, conversion_factor)
+
 	def test_update_child_with_precision(self):
 		from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 		from frappe.model.meta import get_field_precision
@@ -1905,6 +2048,90 @@ class TestSalesOrder(ERPNextTestSuite):
 		supplier_list = sorted([purchase_orders[0].supplier, purchase_orders[1].supplier])
 		self.assertEqual(supplier_list, ["_Test Supplier", "_Test Supplier 1"])
 
+	@ERPNextTestSuite.change_settings("Selling Settings", {"allow_multiple_items": 1})
+	@ERPNextTestSuite.change_settings("Buying Settings", {"allow_multiple_items": 0})
+	def test_purchase_order_supplier_selection_uses_sales_order_rows(self):
+		so = make_sales_order(
+			item_list=[
+				{"item_code": "_Test Item", "qty": 2, "rate": 100, "warehouse": "_Test Warehouse - _TC"},
+				{"item_code": "_Test Item", "qty": 3, "rate": 100, "warehouse": "_Test Warehouse - _TC"},
+			]
+		)
+		selected_items = [
+			{"name": row.name, "item_code": row.item_code, "supplier": supplier}
+			for row, supplier in zip(so.items, ["_Test Supplier", "_Test Supplier 1"], strict=True)
+		]
+
+		purchase_orders = make_purchase_order(so.name, selected_items=selected_items)
+
+		self.assertEqual(len(purchase_orders), 2)
+		for purchase_order in purchase_orders:
+			row = so.items[0] if purchase_order.supplier == "_Test Supplier" else so.items[1]
+			self.assertEqual(len(purchase_order.items), 1)
+			self.assertEqual(purchase_order.items[0].sales_order_item, row.name)
+			self.assertEqual(purchase_order.items[0].qty, row.qty)
+
+		purchase_orders = make_purchase_order(so.name, selected_items=selected_items[:1])
+		self.assertEqual(len(purchase_orders), 1)
+		self.assertEqual(len(purchase_orders[0].items), 1)
+		self.assertEqual(purchase_orders[0].items[0].sales_order_item, so.items[0].name)
+
+	@ERPNextTestSuite.change_settings("Selling Settings", {"allow_multiple_items": 1})
+	def test_purchase_order_rejects_ambiguous_or_foreign_rows(self):
+		so = make_sales_order(
+			item_list=[
+				{"item_code": "_Test Item", "qty": 2, "rate": 100, "warehouse": "_Test Warehouse - _TC"},
+				{"item_code": "_Test Item", "qty": 3, "rate": 100, "warehouse": "_Test Warehouse - _TC"},
+			]
+		)
+		other_so = make_sales_order()
+		for row_name in (None, other_so.items[0].name):
+			with self.subTest(row_name=row_name):
+				with self.assertRaisesRegex(frappe.ValidationError, "Select a valid Sales Order row"):
+					make_purchase_order(
+						so.name,
+						selected_items=[
+							{"name": row_name, "item_code": "_Test Item", "supplier": "_Test Supplier"}
+						],
+					)
+
+	@ERPNextTestSuite.change_settings("Selling Settings", {"allow_multiple_items": 1})
+	@ERPNextTestSuite.change_settings("Buying Settings", {"allow_multiple_items": 0})
+	def test_purchase_order_supplier_selection_uses_bundle_parent_rows(self):
+		bundle = make_item("_Test Repeated Supplier Bundle", {"is_stock_item": 0})
+		component = make_item("_Test Repeated Supplier Bundle Component", {"is_stock_item": 1})
+		make_product_bundle(bundle.name, [component.name], qty=2)
+		so = make_sales_order(
+			item_list=[
+				{"item_code": bundle.name, "qty": 2, "rate": 100, "warehouse": "_Test Warehouse - _TC"},
+				{"item_code": bundle.name, "qty": 3, "rate": 100, "warehouse": "_Test Warehouse - _TC"},
+			]
+		)
+		selected_items = [
+			{"name": row.name, "item_code": row.item_code, "supplier": supplier}
+			for row, supplier in zip(so.items, ["_Test Supplier", "_Test Supplier 1"], strict=True)
+		]
+
+		purchase_orders = make_purchase_order(so.name, selected_items=selected_items)
+
+		self.assertEqual(len(purchase_orders), 2)
+		for purchase_order in purchase_orders:
+			row = so.items[0] if purchase_order.supplier == "_Test Supplier" else so.items[1]
+			packed_item = so.get("packed_items", {"parent_detail_docname": row.name})[0]
+			self.assertEqual(len(purchase_order.items), 1)
+			self.assertEqual(purchase_order.items[0].sales_order_packed_item, packed_item.name)
+			self.assertEqual(purchase_order.items[0].qty, row.qty * 2)
+
+		purchase_orders = make_purchase_order(so.name, selected_items=selected_items[1:])
+		self.assertEqual(len(purchase_orders), 1)
+		self.assertEqual(purchase_orders[0].supplier, "_Test Supplier 1")
+		self.assertEqual(len(purchase_orders[0].items), 1)
+		self.assertEqual(purchase_orders[0].items[0].qty, 6)
+		self.assertEqual(
+			purchase_orders[0].items[0].sales_order_packed_item,
+			so.get("packed_items", {"parent_detail_docname": so.items[1].name})[0].name,
+		)
+
 	def test_product_bundles_in_so_are_replaced_with_bundle_items_in_po(self):
 		"""
 		Tests if the the Product Bundles in the Items table of Sales Orders are replaced with
@@ -1933,6 +2160,33 @@ class TestSalesOrder(ERPNextTestSuite):
 
 		self.assertEqual(purchase_order.items[0].item_code, "_Test Bundle Item 1")
 		self.assertEqual(purchase_order.items[1].item_code, "_Test Bundle Item 2")
+
+	def test_purchase_order_bundle_items_are_filtered_by_supplier(self):
+		so_items = []
+		for index, supplier in enumerate(["_Test Supplier", "_Test Supplier 1"], start=1):
+			bundle = make_item(f"_Test Supplier Bundle {index}", {"is_stock_item": 0})
+			component = make_item(f"_Test Supplier Bundle Component {index}", {"is_stock_item": 1})
+			make_product_bundle(bundle.name, [component.name], qty=2)
+			so_items.append(
+				{
+					"item_code": bundle.name,
+					"warehouse": "_Test Warehouse - _TC",
+					"qty": index + 1,
+					"rate": 400,
+					"supplier": supplier,
+				}
+			)
+		so = make_sales_order(item_list=so_items)
+
+		purchase_orders = make_purchase_order(so.name, selected_items=so_items)
+
+		self.assertEqual(
+			{po.supplier: [(item.item_code, item.qty) for item in po.items] for po in purchase_orders},
+			{
+				"_Test Supplier": [("_Test Supplier Bundle Component 1", 4)],
+				"_Test Supplier 1": [("_Test Supplier Bundle Component 2", 6)],
+			},
+		)
 
 	def test_purchase_order_updates_packed_item_ordered_qty(self):
 		"""
@@ -1966,6 +2220,33 @@ class TestSalesOrder(ERPNextTestSuite):
 		so.reload()
 		self.assertEqual(so.packed_items[0].ordered_qty, 2)
 		self.assertEqual(so.packed_items[1].ordered_qty, 2)
+
+	def test_ordered_qty_is_reset_when_cancelled_sales_order_is_unlinked(self):
+		"""Cancelling a Sales Order unlinks its Purchase Orders, so `ordered_qty` must be recomputed."""
+		selected_items = [{"item_code": "_Test Item", "supplier": "_Test Supplier"}]
+		so = make_sales_order(item_code="_Test Item", qty=10)
+
+		purchase_order = make_purchase_order(so.name, selected_items=selected_items)[0]
+		purchase_order.schedule_date = add_days(nowdate(), 1)
+		purchase_order.submit()
+
+		so.reload()
+		self.assertEqual(so.items[0].ordered_qty, 10)
+
+		so.cancel()
+		so.reload()
+		self.assertEqual(so.items[0].ordered_qty, 0)
+
+		amended_so = frappe.copy_doc(so)
+		amended_so.amended_from = so.name
+		amended_so.docstatus = 0
+		amended_so.insert()
+		amended_so.submit()
+
+		self.assertEqual(amended_so.items[0].ordered_qty, 0)
+
+		new_purchase_order = make_purchase_order(amended_so.name, selected_items=selected_items)[0]
+		self.assertEqual(new_purchase_order.items[0].qty, 10)
 
 	def test_reserved_qty_for_closing_so(self):
 		bin = frappe.get_all(
@@ -2099,6 +2380,16 @@ class TestSalesOrder(ERPNextTestSuite):
 			)
 			self.assertEqual(wo_qty[0][0], so_item_name.get(item))
 
+	def test_update_status_endpoint_rejects_invalid_status(self):
+		from erpnext.selling.doctype.sales_order.sales_order import update_status
+
+		so = make_sales_order()
+		# only Draft / On Hold / Closed are allowed, and only on a submitted order
+		self.assertRaises(frappe.ValidationError, update_status, "Cancelled", so.name)
+
+		draft = make_sales_order(do_not_submit=1)
+		self.assertRaises(frappe.ValidationError, update_status, "Closed", draft.name)
+
 	@ERPNextTestSuite.change_settings("Selling Settings", {"allow_multiple_items": 1})
 	def test_make_work_order_for_duplicate_product_bundle_rows(self):
 		from erpnext.selling.doctype.sales_order.sales_order import get_work_order_items
@@ -2153,6 +2444,48 @@ class TestSalesOrder(ERPNextTestSuite):
 				getdate(work_order.expected_delivery_date),
 				getdate(expected_delivery_dates[work_order.sales_order_item]),
 			)
+
+	def test_update_child_keeps_paid_payment_term_outstanding(self):
+		from erpnext.accounts.doctype.payment_entry.test_payment_entry import (
+			create_payment_terms_template,
+			get_payment_entry,
+		)
+
+		create_payment_terms_template()
+		for invoice_portion in (100, 0):
+			with self.subTest(invoice_portion=invoice_portion):
+				so = make_sales_order(qty=1, rate=1000, do_not_save=True)
+				so.payment_terms_template = "Test Receivable Template"
+				so.set("payment_schedule", [])
+				so.append(
+					"payment_schedule",
+					{
+						"payment_term": "Basic Amount Receivable",
+						"due_date": so.delivery_date,
+						"invoice_portion": invoice_portion,
+						"payment_amount": 1000,
+					},
+				)
+				so.insert()
+				so.submit()
+
+				pe = get_payment_entry("Sales Order", so.name, party_amount=400)
+				pe.reference_no = "1"
+				pe.reference_date = nowdate()
+				pe.references[0].allocated_amount = 400
+				pe.insert()
+				pe.submit()
+
+				item = so.items[0]
+				trans_item = json.dumps(
+					[{"item_code": item.item_code, "qty": 1, "rate": 1000, "docname": item.name}]
+				)
+				update_child_qty_rate("Sales Order", trans_item, so.name)
+
+				term = frappe.get_doc("Sales Order", so.name).payment_schedule[0]
+				self.assertEqual(term.paid_amount, 400)
+				self.assertEqual(term.outstanding, 600)
+				self.assertEqual(term.base_outstanding, 600)
 
 	def test_advance_payment_entry_unlink_against_sales_order(self):
 		from erpnext.accounts.doctype.payment_entry.test_payment_entry import get_payment_entry
@@ -3352,6 +3685,25 @@ class TestSalesOrder(ERPNextTestSuite):
 		po.submit()
 		self.assertEqual(po.taxes[0].tax_amount, 2)
 
+	def test_make_purchase_order_does_not_inherit_incoterm(self):
+		for delivered_by_supplier in (0, 1):
+			with self.subTest(delivered_by_supplier=delivered_by_supplier):
+				so = make_sales_order(do_not_save=True)
+				so.incoterm = "CIF"
+				so.named_place = "Hamburg port"
+				so.items[0].delivered_by_supplier = delivered_by_supplier
+				so.items[0].supplier = "_Test Supplier"
+				so.submit()
+
+				po = make_purchase_order(so.name, selected_items=so.items)[0]
+
+				self.assertFalse(po.incoterm)
+				self.assertFalse(po.named_place)
+				self.assertEqual(po.items[0].sales_order, so.name)
+				self.assertEqual(po.supplier, "_Test Supplier")
+				self.assertEqual(frappe.get_value("Sales Order", so.name, "incoterm"), "CIF")
+				self.assertEqual(frappe.get_value("Sales Order", so.name, "named_place"), "Hamburg port")
+
 	def test_make_purchase_order_does_not_inherit_party_fields(self):
 		"""
 		Customer-derived fields must not leak from a drop-ship SO into the PO.
@@ -3456,6 +3808,145 @@ class TestSalesOrder(ERPNextTestSuite):
 		):
 			so.append("sales_team", {"sales_person": sales_person, "allocated_percentage": percentage})
 		so.save()
+
+	@ERPNextTestSuite.change_settings(
+		"Stock Settings", {"enable_stock_reservation": 1, "use_serial_batch_fields": 0}
+	)
+	def test_product_bundle_reservation(self):
+		pb_item = make_item("Product Bundle Item", {"is_stock_item": 0})
+		simple_item = make_item("Simple Item", {"is_stock_item": 1})
+		sb_item = make_item(
+			"Serial Batch Item",
+			{
+				"is_stock_item": 1,
+				"has_serial_no": 1,
+				"has_batch_no": 1,
+				"create_new_batch": 1,
+				"batch_number_series": "BAT-TSBIFRM-.#####",
+				"serial_no_series": "SN-TSBIFRM-.#####",
+			},
+		)
+		make_product_bundle(pb_item.name, [simple_item.name, sb_item.name])
+
+		warehouse = "_Test Warehouse - _TC"
+
+		make_stock_entry(
+			item_code=simple_item.name,
+			target=warehouse,
+			qty=10,
+		)
+
+		# two different stock entries on purpose to get two batches
+		make_stock_entry(
+			item_code=sb_item.name,
+			target=warehouse,
+			qty=5,
+		)
+		make_stock_entry(
+			item_code=sb_item.name,
+			target=warehouse,
+			qty=5,
+		)
+
+		so = make_sales_order(item_code=pb_item.name, do_not_submit=1)
+		so.reserve_stock = 1
+		for item in so.packed_items:
+			item.reserve_stock = 1
+		so.submit()
+
+		from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import (
+			get_sre_reserved_batch_nos_details,
+			get_sre_reserved_qty_for_voucher_detail_no,
+			get_sre_reserved_serial_nos_details,
+		)
+
+		for item in so.packed_items:
+			self.assertEqual(
+				get_sre_reserved_qty_for_voucher_detail_no(item.item_code, "Sales Order", so.name, item.name),
+				item.qty,
+			)
+
+		sre_serial_nos = list(get_sre_reserved_serial_nos_details(sb_item.name, warehouse).keys())
+		sre_batch_nos = list(get_sre_reserved_batch_nos_details(sb_item.name, warehouse).keys())
+
+		dn = make_delivery_note(so.name, kwargs={"for_reserved_stock": True})
+		dn.save()
+
+		self.assertTrue(dn.packed_items[1].serial_and_batch_bundle)
+
+		from erpnext.stock.serial_batch_bundle import get_batches_from_bundle, get_serial_nos
+
+		serial_nos_in_bundle = get_serial_nos(dn.packed_items[1].serial_and_batch_bundle)
+		batches_in_bundle = list(get_batches_from_bundle(dn.packed_items[1].serial_and_batch_bundle).keys())
+
+		self.assertEqual(sre_serial_nos, serial_nos_in_bundle)
+		self.assertEqual(sre_batch_nos, batches_in_bundle)
+
+		dn.items[0].qty = 5
+		dn.save()
+		sabb_doc = frappe.get_doc("Serial and Batch Bundle", dn.packed_items[1].serial_and_batch_bundle)
+		sabb_doc.entries = sabb_doc.entries[:5]
+		sabb_doc.company = dn.company
+		sabb_doc.save()
+		dn.submit()
+
+		serial_nos = set(sre_serial_nos) - set(get_serial_nos(sabb_doc.name))
+		batch_nos = set(sre_batch_nos) - set(get_batches_from_bundle(sabb_doc.name).keys())
+
+		dn1 = make_delivery_note(so.name, kwargs={"for_reserved_stock": True})
+		dn1.save()
+
+		self.assertTrue(dn1.packed_items[1].serial_and_batch_bundle)
+
+		from erpnext.stock.serial_batch_bundle import get_batches_from_bundle, get_serial_nos
+
+		serial_nos_in_bundle = set(get_serial_nos(dn1.packed_items[1].serial_and_batch_bundle))
+		batches_in_bundle = set(get_batches_from_bundle(dn1.packed_items[1].serial_and_batch_bundle).keys())
+
+		self.assertEqual(serial_nos, serial_nos_in_bundle)
+		self.assertEqual(batch_nos, batches_in_bundle)
+
+		dn.cancel()
+
+		# test the same thing with sales invoice as well
+
+		si = make_sales_invoice(so.name)
+		si.update_stock = 1
+		si.save()
+
+		self.assertTrue(si.packed_items[1].serial_and_batch_bundle)
+
+		from erpnext.stock.serial_batch_bundle import get_batches_from_bundle, get_serial_nos
+
+		serial_nos_in_bundle = get_serial_nos(si.packed_items[1].serial_and_batch_bundle)
+		batches_in_bundle = list(get_batches_from_bundle(si.packed_items[1].serial_and_batch_bundle).keys())
+
+		self.assertEqual(sre_serial_nos, serial_nos_in_bundle)
+		self.assertEqual(sre_batch_nos, batches_in_bundle)
+
+		si.items[0].qty = 5
+		si.save()
+		sabb_doc = frappe.get_doc("Serial and Batch Bundle", si.packed_items[1].serial_and_batch_bundle)
+		sabb_doc.entries = sabb_doc.entries[:5]
+		sabb_doc.company = si.company
+		sabb_doc.save()
+		si.submit()
+
+		serial_nos = set(sre_serial_nos) - set(get_serial_nos(sabb_doc.name))
+		batch_nos = set(sre_batch_nos) - set(get_batches_from_bundle(sabb_doc.name).keys())
+
+		si1 = make_delivery_note(so.name, kwargs={"for_reserved_stock": True})
+		si1.save()
+
+		self.assertTrue(si1.packed_items[1].serial_and_batch_bundle)
+
+		from erpnext.stock.serial_batch_bundle import get_batches_from_bundle, get_serial_nos
+
+		serial_nos_in_bundle = set(get_serial_nos(si1.packed_items[1].serial_and_batch_bundle))
+		batches_in_bundle = set(get_batches_from_bundle(si1.packed_items[1].serial_and_batch_bundle).keys())
+
+		self.assertEqual(serial_nos, serial_nos_in_bundle)
+		self.assertEqual(batch_nos, batches_in_bundle)
 
 
 def compare_payment_schedules(doc, doc1, doc2):

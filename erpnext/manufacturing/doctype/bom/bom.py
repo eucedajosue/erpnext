@@ -388,10 +388,10 @@ class BOM(WebsiteGenerator):
 
 		return [
 			_(
-				"{0}: has no raw materials. Choose an Output Item BOM, or open the step and click Add Raw Materials."
-			).format(self.get_step_label(row))
+				"{0} has no raw materials. Click Add Raw Materials for this step in the Steps section, or select a BOM for its output item {1}."
+			).format(self.get_step_label(row), bold(row.finished_good))
 			for row in self.operations
-			if not row.bom_no and row.idx not in steps_with_materials
+			if row.finished_good and not row.bom_no and row.idx not in steps_with_materials
 		]
 
 	def validate_secondary_items(self):
@@ -485,10 +485,12 @@ class BOM(WebsiteGenerator):
 				own_cost += flt(item.cost)
 			total_secondary_items_per += flt(item.cost_allocation_per)
 
-		if self.cost_allocation_per == 100 and total_secondary_items_per:
-			self.cost_allocation_per -= total_secondary_items_per
+		self.cost_allocation_per = flt(100 - total_secondary_items_per, self.precision("cost_allocation_per"))
 
-		self.cost_allocation = (self.raw_material_cost - own_cost) * (self.cost_allocation_per / 100)
+		self.cost_allocation = flt(
+			(self.raw_material_cost - own_cost) * self.cost_allocation_per / 100,
+			self.precision("cost_allocation"),
+		)
 
 	def validate_secondary_items_cost(self):
 		if flt(self.secondary_items_cost) > flt(self.raw_material_cost):
@@ -503,7 +505,7 @@ class BOM(WebsiteGenerator):
 		for item in self.secondary_items:
 			total_cost_allocation_per += flt(item.cost_allocation_per)
 
-		if total_cost_allocation_per != 100:
+		if flt(total_cost_allocation_per, self.precision("cost_allocation_per")) != 100:
 			frappe.throw(_("Cost allocation between finished goods and secondary items should equal 100%"))
 
 	def on_update_after_submit(self):
@@ -1344,7 +1346,9 @@ class BOM(WebsiteGenerator):
 				bom_item.rate,
 				bom_item.include_item_in_manufacturing,
 				bom_item.sourced_by_supplier,
-				bom_item.stock_qty / ifnull(bom.quantity, 1) AS qty_consumed_per_unit
+				bom.quantity,
+				bom.process_loss_qty,
+				bom.is_phantom_bom
 			FROM `tabBOM Explosion Item` bom_item, `tabBOM` bom
 			WHERE
 				bom_item.parent = bom.name
@@ -1356,6 +1360,8 @@ class BOM(WebsiteGenerator):
 		)
 
 		for d in child_fb_items:
+			good_qty = (flt(d.quantity) or 1) if d.is_phantom_bom else get_good_qty(d)
+			d.qty_consumed_per_unit = flt(d.stock_qty) / good_qty
 			self.add_to_cur_exploded_items(
 				frappe._dict(
 					{
@@ -1751,13 +1757,29 @@ def get_bom_items_as_dict(
 		else:
 			item_dict[key] = item
 
+	fields = [
+		["Account", "expense_account", "stock_adjustment_account"],
+		["Cost Center", "cost_center", "cost_center"],
+		["Warehouse", "default_warehouse", ""],
+	]
+
+	company_of = {}
+	for d in fields:
+		names = {item_details.get(d[1]) for item_details in item_dict.values() if item_details.get(d[1])}
+		company_of[d[0]] = (
+			{
+				r.name: r.company
+				for r in frappe.get_all(
+					d[0], filters={"name": ("in", list(names))}, fields=["name", "company"]
+				)
+			}
+			if names
+			else {}
+		)
+
 	for item, item_details in item_dict.items():
-		for d in [
-			["Account", "expense_account", "stock_adjustment_account"],
-			["Cost Center", "cost_center", "cost_center"],
-			["Warehouse", "default_warehouse", ""],
-		]:
-			company_in_record = frappe.db.get_value(d[0], item_details.get(d[1]), "company")
+		for d in fields:
+			company_in_record = company_of[d[0]].get(item_details.get(d[1]))
 			if not item_details.get(d[1]) or (company_in_record and company != company_in_record):
 				item_dict[item][d[1]] = frappe.get_cached_value("Company", company, d[2]) if d[2] else None
 
@@ -1802,7 +1824,7 @@ def validate_bom_no(item, bom_no):
 
 
 @frappe.whitelist()
-def get_children(parent=None, is_root=False, **filters):
+def get_children(doctype=None, parent=None, is_root=False, **filters):
 	if not parent or parent == "BOM":
 		frappe.msgprint(_("Please select a BOM"))
 		return
@@ -1869,7 +1891,7 @@ def add_non_stock_items_cost(stock_entry, work_order, expense_account, job_card=
 			continue
 
 		items.setdefault(d.item_code, 0)
-		items[d.item_code] += flt(d.amount)
+		items[d.item_code] += flt(d.base_amount if table == "items" else d.amount)
 
 	non_stock_items = frappe.get_all(
 		"Item",
@@ -2022,6 +2044,27 @@ def get_component_account(parent, company):
 	)
 
 
+def _add_additional_operating_cost(stock_entry, work_order, expense_account, job_card=None):
+	if not (work_order and work_order.additional_operating_cost and work_order.qty):
+		return
+
+	if job_card and job_card.finished_good and job_card.finished_good != work_order.production_item:
+		return
+
+	per_unit = flt(work_order.additional_operating_cost) / flt(work_order.qty)
+	if not per_unit:
+		return
+
+	stock_entry.append(
+		"additional_costs",
+		{
+			"expense_account": expense_account,
+			"description": "Additional Operating Cost",
+			"amount": per_unit * flt(stock_entry.fg_completed_qty),
+		},
+	)
+
+
 def add_operations_cost(stock_entry, work_order=None, expense_account=None, job_card=None):
 	from erpnext.stock.doctype.stock_entry.stock_entry import (
 		get_remaining_operating_cost,
@@ -2047,18 +2090,7 @@ def add_operations_cost(stock_entry, work_order=None, expense_account=None, job_
 					stock_entry, expense_account, remaining_operating_cost * flt(stock_entry.fg_completed_qty)
 				)
 
-	if work_order and work_order.additional_operating_cost and work_order.qty:
-		additional_operating_cost_per_unit = flt(work_order.additional_operating_cost) / flt(work_order.qty)
-
-		if additional_operating_cost_per_unit:
-			stock_entry.append(
-				"additional_costs",
-				{
-					"expense_account": expense_account,
-					"description": "Additional Operating Cost",
-					"amount": additional_operating_cost_per_unit * flt(stock_entry.fg_completed_qty),
-				},
-			)
+	_add_additional_operating_cost(stock_entry, work_order, expense_account, job_card)
 
 	def get_max_operation_quantity():
 		table = frappe.qb.DocType("Job Card")

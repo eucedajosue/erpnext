@@ -20,6 +20,7 @@ from erpnext.accounts.party import CROSS_PARTY_FIELD_NO_MAP, get_due_date
 from erpnext.controllers.accounts_controller import _get_taxes_and_charges, merge_taxes
 from erpnext.controllers.mapper import get_qty_already_mapped
 from erpnext.controllers.selling_controller import SellingController
+from erpnext.stock.doctype.packed_item.packed_item import make_packing_list
 
 form_grid_templates = {"items": "templates/form_grid/item_grid.html"}
 
@@ -216,38 +217,45 @@ class DeliveryNote(SellingController):
 				where name=`tabSales Invoice Item`.parent and update_stock = 1)""",
 			},
 		]
-		if cint(self.is_return):
-			self.status_updater.extend(
-				[
-					{
-						"source_dt": "Delivery Note Item",
-						"target_dt": "Sales Order Item",
-						"join_field": "so_detail",
-						"target_field": "returned_qty",
-						"target_parent_dt": "Sales Order",
-						"source_field": "-1 * qty * conversion_factor",
-						"target_conversion_factor": "conversion_factor",
-						"second_source_dt": "Sales Invoice Item",
-						"second_source_field": "-1 * qty * conversion_factor",
-						"second_join_field": "so_detail",
-						"extra_cond": """ and exists (select name from `tabDelivery Note`
-					where name=`tabDelivery Note Item`.parent and is_return=1)""",
-						"second_source_extra_cond": """ and exists (select name from `tabSales Invoice`
-					where name=`tabSales Invoice Item`.parent and is_return=1 and update_stock=1)""",
-					},
-					{
-						"source_dt": "Delivery Note Item",
-						"target_dt": "Delivery Note Item",
-						"join_field": "dn_detail",
-						"target_field": "returned_qty",
-						"target_parent_dt": "Delivery Note",
-						"target_parent_field": "per_returned",
-						"target_ref_field": "stock_qty",
-						"source_field": "-1 * stock_qty",
-						"percent_join_field_parent": "return_against",
-					},
-				]
-			)
+
+	def update_status_updater_args(self):
+		"""Attach return updaters at submit/cancel, since `make_return_doc` sets `is_return` after `__init__`."""
+		# guard against a second append when one object is submitted and then cancelled
+		if not cint(self.is_return) or self.flags.get("return_updaters_added"):
+			return
+
+		self.flags.return_updaters_added = True
+		self.status_updater.extend(
+			[
+				{
+					"source_dt": "Delivery Note Item",
+					"target_dt": "Sales Order Item",
+					"join_field": "so_detail",
+					"target_field": "returned_qty",
+					"target_parent_dt": "Sales Order",
+					"source_field": "-1 * qty * conversion_factor",
+					"target_conversion_factor": "conversion_factor",
+					"second_source_dt": "Sales Invoice Item",
+					"second_source_field": "-1 * qty * conversion_factor",
+					"second_join_field": "so_detail",
+					"extra_cond": """ and exists (select name from `tabDelivery Note`
+				where name=`tabDelivery Note Item`.parent and is_return=1)""",
+					"second_source_extra_cond": """ and exists (select name from `tabSales Invoice`
+				where name=`tabSales Invoice Item`.parent and is_return=1 and update_stock=1)""",
+				},
+				{
+					"source_dt": "Delivery Note Item",
+					"target_dt": "Delivery Note Item",
+					"join_field": "dn_detail",
+					"target_field": "returned_qty",
+					"target_parent_dt": "Delivery Note",
+					"target_parent_field": "per_returned",
+					"target_ref_field": "stock_qty",
+					"source_field": "-1 * stock_qty",
+					"percent_join_field_parent": "return_against",
+				},
+			]
+		)
 
 	def onload(self):
 		super().onload()
@@ -313,9 +321,6 @@ class DeliveryNote(SellingController):
 		self.validate_uom_is_integer("uom", "qty")
 		self.validate_with_previous_doc()
 		self.set_serial_and_batch_bundle_from_pick_list()
-
-		from erpnext.stock.doctype.packed_item.packed_item import make_packing_list
-
 		make_packing_list(self)
 		self.update_current_stock()
 
@@ -490,7 +495,6 @@ class DeliveryNote(SellingController):
 
 	def on_submit(self):
 		self.validate_packed_qty()
-		self.update_pick_list_status()
 
 		# Check for Approving Authority
 		frappe.get_cached_doc("Authorization Control").validate_approving_authority(
@@ -498,7 +502,9 @@ class DeliveryNote(SellingController):
 		)
 
 		# update delivered qty in sales order
+		self.update_status_updater_args()
 		self.update_prevdoc_status()
+		self.update_pick_list_status()
 		self.update_billing_status()
 
 		if not self.is_return:
@@ -530,6 +536,7 @@ class DeliveryNote(SellingController):
 		self.check_sales_order_on_hold_or_close("against_sales_order")
 		self.check_next_docstatus()
 
+		self.update_status_updater_args()
 		self.update_prevdoc_status()
 		self.update_billing_status()
 
@@ -556,27 +563,30 @@ class DeliveryNote(SellingController):
 		self.delete_auto_created_batches()
 
 	def check_credit_limit(self):
-		from erpnext.selling.doctype.customer.customer import check_credit_limit
+		from erpnext.selling.doctype.customer.customer import (
+			check_credit_limit,
+			is_sales_order_credit_check_bypassed,
+		)
 
 		if self.per_billed == 100:
 			return
 
 		extra_amount = 0
 		validate_against_credit_limit = False
-		bypass_credit_limit_check_at_sales_order = cint(
-			frappe.db.get_value(
-				"Customer Credit Limit",
-				filters={"parent": self.customer, "parenttype": "Customer", "company": self.company},
-				fieldname="bypass_credit_limit_check",
-			)
+		bypass_credit_limit_check_at_sales_order = is_sales_order_credit_check_bypassed(
+			self.customer, self.company
 		)
 
 		if bypass_credit_limit_check_at_sales_order:
 			for d in self.get("items"):
 				if not d.against_sales_invoice:
 					validate_against_credit_limit = True
-					extra_amount = self.base_grand_total
-					break
+					# Submitted rows are already in customer outstanding, directly or via the Sales Order.
+					if self.docstatus == 0 and self.base_net_total:
+						extra_amount += d.base_net_amount / self.base_net_total * self.base_grand_total
+			if validate_against_credit_limit and not self.base_net_total:
+				# Customer outstanding excludes zero-net deliveries, including their freight charges.
+				extra_amount = self.base_grand_total
 		else:
 			for d in self.get("items"):
 				if not (d.against_sales_order or d.against_sales_invoice):
@@ -1174,10 +1184,23 @@ def make_delivery_trip(
 
 
 @frappe.whitelist()
-def make_installation_note(source_name, target_doc=None, kwargs=None):
+def make_installation_note(
+	source_name: str, target_doc: str | dict | Document | None = None, kwargs: dict | None = None
+):
+	from erpnext.controllers.sales_and_purchase_return import get_returned_serial_nos
+	from erpnext.stock.utils import get_valid_serial_nos
+
+	# returned_qty_map is keyed by DN Item row and already in the row's sales UOM
+	returned_qty_map = get_returned_qty_map(source_name)
+
 	def update_item(obj, target, source_parent):
-		target.qty = flt(obj.qty) - flt(obj.installed_qty)
-		target.serial_no = obj.serial_no
+		target.qty = flt(obj.qty) - flt(returned_qty_map.get(obj.name, 0)) - flt(obj.installed_qty)
+
+		if obj.serial_no:
+			returned = set(get_returned_serial_nos(obj, source_parent))
+			target.serial_no = "\n".join(s for s in get_valid_serial_nos(obj.serial_no) if s not in returned)
+		else:
+			target.serial_no = obj.serial_no
 
 	doclist = get_mapped_doc(
 		"Delivery Note",
@@ -1192,7 +1215,8 @@ def make_installation_note(source_name, target_doc=None, kwargs=None):
 					"parenttype": "prevdoc_doctype",
 				},
 				"postprocess": update_item,
-				"condition": lambda doc: doc.installed_qty < doc.qty,
+				"condition": lambda doc: doc.installed_qty
+				< flt(doc.qty) - flt(returned_qty_map.get(doc.name, 0)),
 			},
 		},
 		target_doc,
@@ -1356,6 +1380,7 @@ def make_inter_company_purchase_receipt(source_name, target_doc=None):
 
 def make_inter_company_transaction(doctype, source_name, target_doc=None):
 	from erpnext.accounts.doctype.sales_invoice.sales_invoice import (
+		clear_item_tax_template_of_other_company,
 		get_inter_company_details,
 		set_purchase_references,
 		update_address,
@@ -1507,6 +1532,8 @@ def make_inter_company_transaction(doctype, source_name, target_doc=None):
 
 		if (source.get("serial_no") or source.get("batch_no")) and not source.get("serial_and_batch_bundle"):
 			target.set("use_serial_batch_fields", 1)
+
+		clear_item_tax_template_of_other_company(target, details.get("company"))
 
 	bundle_rows = {d.parent_detail_docname: d for d in source_doc.get("packed_items") or []}
 	bundle_rows = {d.name: d for d in source_doc.items if d.name in bundle_rows}

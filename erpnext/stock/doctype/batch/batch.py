@@ -68,7 +68,8 @@ def _make_naming_series_key(prefix):
 	if not str(prefix):
 		return ""
 	else:
-		return prefix.upper() + ".#####"
+		parts = (part if part.startswith("{") else part.upper() for part in prefix.split("."))
+		return ".".join(parts) + ".#####"
 
 
 def get_batch_naming_series():
@@ -148,7 +149,7 @@ class Batch(Document):
 		self.image = frappe.db.get_value("Item", self.item, "image")
 
 	def after_delete(self):
-		revert_series_if_last(get_batch_naming_series(), self.name)
+		revert_series_if_last(get_batch_naming_series(), self.name, self)
 
 	def validate(self):
 		self.item_has_batch_enabled()
@@ -326,12 +327,23 @@ def get_batches_by_oldest(item_code: str, warehouse: str):
 	frappe.has_permission("Batch", "select", throw=True)
 
 	batches = get_batch_qty(item_code=item_code, warehouse=warehouse)
-	batches_dates = [[batch, frappe.get_value("Batch", batch.batch_no, "expiry_date")] for batch in batches]
+	if not batches:
+		return []
+
+	expiry_dates = dict(
+		frappe.get_all(
+			"Batch",
+			filters={"name": ["in", {batch.batch_no for batch in batches}]},
+			fields=["name", "expiry_date"],
+			as_list=True,
+		)
+	)
+	batches_dates = [[batch, expiry_dates.get(batch.batch_no)] for batch in batches]
 	batches_dates.sort(key=lambda tup: (tup[1] is None, tup[1]))
 	return batches_dates
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def split_batch(batch_no: str, item_code: str, warehouse: str, qty: float, new_batch_id: str | None = None):
 	"""Split the batch into a new batch"""
 	company = frappe.db.get_value("Warehouse", warehouse, "company")
