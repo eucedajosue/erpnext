@@ -1821,6 +1821,7 @@ erpnext.PointOfSale.Controller = class {
 		const is_stock_item = resp[1];
 		const is_negative_stock_allowed = resp[2];
 
+		const was_frozen = frappe.dom.freeze_count > 0;
 		frappe.dom.unfreeze();
 		const bold_uom = item_row.stock_uom.bold();
 		const bold_item_code = item_row.item_code.bold();
@@ -1864,7 +1865,8 @@ erpnext.PointOfSale.Controller = class {
 			});
 			frappe.utils.play_sound("error");
 		}
-		frappe.dom.freeze();
+		// Solo se vuelve a congelar si la pantalla estaba congelada antes (el "+1" rápido no congela).
+		if (was_frozen) frappe.dom.freeze();
 	}
 
 	async get_alternative_item_for_unavailable_stock(item_code, warehouse, qty_needed) {

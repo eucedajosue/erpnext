@@ -140,6 +140,8 @@ frappe.ui.form.on("POS Closing Entry", {
 				pos_profile: frm.doc.pos_profile,
 				period_start: frm.doc.period_start_date,
 				period_end: frm.doc.period_end_date,
+				pos_opening_entry: frm.doc.pos_opening_entry,
+				user: frm.doc.user,
 			},
 			callback: (r) => {
 				// Limpiar la tabla antes de agregar
@@ -157,6 +159,8 @@ frappe.ui.form.on("POS Closing Entry", {
 
 						frm.add_child(target_table, {
 							payment_entry: entry.name,
+							retiro_de_caja: entry.retiro_de_caja,
+							tipo_retiro: entry.tipo_retiro,
 							date: entry.posting_date,
 							mode_of_payment: entry.mode_of_payment,
 							amount: movement_amount,
