@@ -487,13 +487,30 @@ toggle_group_and_items() {
 		});
 
 		this.$component.on("click", ".group-wrapper", (e) => {
-				const group = $(e.currentTarget).data("group");
-				this.item_group = group;
-				this.$groups_container.hide();
-				this.$items_container.show();
-				this.filter_items({ search_term: "" });
-				this.$component.find(".label").text(group);
-			});
+			const $tile = $(e.currentTarget);
+
+			// "← Volver": regresar al nivel anterior de grupos.
+			if ($tile.hasClass("group-back")) {
+				this.show_groups_container(this.groups_history.pop() || this.parent_item_group, {
+					from_back: true,
+				});
+				return;
+			}
+
+			const group = String($tile.data("group"));
+			// Grupo con subgrupos: entrar al siguiente nivel en lugar de abrir los artículos.
+			if (cint($tile.data("has-children"))) {
+				this.groups_history.push(this.groups_level);
+				this.show_groups_container(group, { from_back: true });
+				return;
+			}
+
+			this.item_group = group;
+			this.$groups_container.hide();
+			this.$items_container.show();
+			this.filter_items({ search_term: "" });
+			this.$component.find(".label").text(group);
+		});
 
 		onScan.decodeKeyEvent = function (oEvent) {
 			var iCode = this._getNormalizedKeyNum(oEvent);
@@ -708,22 +725,39 @@ toggle_group_and_items() {
 		this.$component.css("display", show ? "flex" : "none");
 	}
 
-	// Modifica show_groups_container para usar el mismo estilo
-	async show_groups_container() {
+	// Cuadrícula de grupos navegable: cada nivel muestra el grupo actual (todos sus artículos),
+	// sus subgrupos y "← Volver" cuando no es el primer nivel.
+	async show_groups_container(level = null, { from_back = false } = {}) {
+		if (!from_back) this.groups_history = [];
+		this.groups_history = this.groups_history || [];
+		this.groups_level = level || this.parent_item_group;
+
 		const res = await frappe.call({
-			method: "erpnext.selling.page.point_of_sale.point_of_sale.get_item_groups",
-			args: { parent_item_group: this.parent_item_group },
+			method: "erpnext.selling.page.point_of_sale.point_of_sale.get_pos_item_group_tiles",
+			args: { parent_item_group: this.groups_level, pos_profile: this.pos_profile },
 		});
 		const groups = res.message || [];
 		this.$groups_container.html("");
-		
-		groups.forEach(group => {
+
+		if (this.groups_level !== this.parent_item_group) {
 			this.$groups_container.append(`
-				<div class="group-wrapper" data-group="${group.name}">
+				<div class="group-wrapper group-back">
+					<div class="item-display abbr">←</div>
+					<div class="group-name">${__("Volver")}</div>
+				</div>
+			`);
+		}
+
+		groups.forEach((group) => {
+			const name = frappe.utils.escape_html(group.name);
+			const label = group.is_current
+				? `${__("Todo")}: ${frappe.ellipsis(group.name, 12)}`
+				: frappe.ellipsis(group.name, 18);
+			this.$groups_container.append(`
+				<div class="group-wrapper" data-group="${name}" data-has-children="${cint(group.has_children)}"
+					title="${name}">
 					${this.get_group_image_html(group)}
-					
-					<div class="group-name">${frappe.ellipsis(group.name, 18)}</div>
-					
+					<div class="group-name">${frappe.utils.escape_html(label)}${group.has_children ? " ›" : ""}</div>
 				</div>
 			`);
 		});
@@ -731,8 +765,7 @@ toggle_group_and_items() {
 		this.$items_container.hide();
 	}
 
-	
-	get_group_image_html(group) {
+		get_group_image_html(group) {
 		if (this.hide_images) return "";
 		if (group.image) {
 			return `<div class="group-image">

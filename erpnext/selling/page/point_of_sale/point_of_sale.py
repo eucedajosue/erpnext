@@ -1000,26 +1000,52 @@ def get_customer_recent_transactions(customer):
 	return invoices
 
 @frappe.whitelist()
-def get_item_groups(parent_item_group=None):
-    # Obtener el grupo principal si no se especifica
-    if not parent_item_group:
-        parent_item_group = frappe.get_all("Item Group", {"lft": 1, "is_group": 1}, pluck="name")
-        if parent_item_group:
-            parent_item_group = parent_item_group[0]
-        else:
-            return []
+def get_pos_item_group_tiles(parent_item_group=None, pos_profile=None):
+	"""Botones de grupos del POS: el grupo indicado y sus hijos directos.
 
-    # Obtener el grupo principal
-    main_group = frappe.get_value("Item Group", parent_item_group, ["name", "image"])
-    groups = []
-    if main_group:
-        groups.append({"name": main_group[0], "image": main_group[1]})
+	No debe llamarse `get_item_groups`: ese nombre ya es la función importada de POS Profile que
+	filtra los artículos por los grupos de la caja; si se reemplaza, el POS muestra todo el catálogo.
+	Si el POS Profile tiene grupos configurados, solo se muestran los hijos que los contienen.
+	"""
+	if pos_profile:
+		check_pos_profile_access(pos_profile)
 
-    # Obtener los grupos hijos
-    child_groups = frappe.get_all(
-        "Item Group",
-        filters={"parent_item_group": parent_item_group},
-        fields=["name", "image"]
-    )
-    groups.extend(child_groups)
-    return groups
+	if not parent_item_group:
+		parent_item_group = frappe.get_all("Item Group", {"lft": 1, "is_group": 1}, pluck="name")
+		if parent_item_group:
+			parent_item_group = parent_item_group[0]
+		else:
+			return []
+
+	main_group = frappe.get_value("Item Group", parent_item_group, ["name", "image"])
+	groups = []
+	if main_group:
+		# Primer botón: todos los artículos del grupo actual (incluye sus subgrupos).
+		groups.append({"name": main_group[0], "image": main_group[1], "is_current": 1, "has_children": 0})
+
+	child_groups = frappe.get_all(
+		"Item Group",
+		filters={"parent_item_group": parent_item_group},
+		fields=["name", "image", "lft", "rgt"],
+		order_by="lft asc",
+	)
+
+	allowed = get_item_groups(pos_profile) if pos_profile else []
+	allowed_bounds = (
+		frappe.get_all("Item Group", filters={"name": ("in", allowed)}, fields=["lft", "rgt"]) if allowed else []
+	)
+
+	def contains_allowed(g, strict=False):
+		if strict:
+			return any(g.lft < b.lft and b.rgt < g.rgt for b in allowed_bounds)
+		return any(g.lft <= b.lft and b.rgt <= g.rgt for b in allowed_bounds)
+
+	if allowed:
+		# Un hijo se muestra si está permitido o contiene algún grupo permitido.
+		child_groups = [g for g in child_groups if g.name in allowed or contains_allowed(g)]
+
+	for g in child_groups:
+		# Con subgrupos visibles el botón entra al siguiente nivel en lugar de abrir los artículos.
+		has_children = contains_allowed(g, strict=True) if allowed else (g.rgt - g.lft > 1)
+		groups.append({"name": g.name, "image": g.image, "is_current": 0, "has_children": int(has_children)})
+	return groups
