@@ -6,6 +6,8 @@ import json
 
 import frappe
 from frappe.query_builder import Criterion, DocType, Order
+from frappe.query_builder.functions import Coalesce, Sum
+from pypika.terms import Field
 from frappe.utils import cint, get_datetime, getdate
 from frappe.utils.nestedset import get_root_of
 
@@ -13,6 +15,24 @@ from erpnext.accounts.doctype.pos_invoice.pos_invoice import get_item_group, get
 from erpnext.accounts.doctype.pos_profile.pos_profile import get_child_nodes, get_item_groups
 from erpnext.stock.get_item_details import get_conversion_factor
 from erpnext.stock.utils import scan_barcode
+
+
+def get_warehouse_stock_subquery(warehouse):
+	"""Existencia (Bin.actual_qty) por ítem en la bodega; si es un grupo, suma sus bodegas hijas."""
+	bin_dt = DocType("Bin")
+	warehouses = [warehouse]
+	if warehouse and frappe.get_cached_value("Warehouse", warehouse, "is_group"):
+		lft, rgt = frappe.get_cached_value("Warehouse", warehouse, ["lft", "rgt"])
+		warehouses = frappe.get_all(
+			"Warehouse", filters={"lft": [">=", lft], "rgt": ["<=", rgt], "is_group": 0}, pluck="name"
+		) or [warehouse]
+
+	return (
+		frappe.qb.from_(bin_dt)
+		.select(bin_dt.item_code, Sum(bin_dt.actual_qty).as_("qty"))
+		.where(bin_dt.warehouse.isin(warehouses))
+		.groupby(bin_dt.item_code)
+	).as_("cm_stock")
 
 
 def search_by_term(search_term, warehouse, price_list):
@@ -229,8 +249,18 @@ def get_items(start, page_length, price_list, item_group, pos_profile, search_te
 			)
 		)
 
+	# Orden: mayor existencia en la bodega del perfil primero; empates por nombre.
+	# Se ordena en la consulta (no después) para que la paginación respete el orden.
+	stock = get_warehouse_stock_subquery(warehouse)
+	query = query.left_join(stock).on(Field("item_code", table=stock) == item.name)
+
 	items_data = (
-		query.orderby(item.name, order=Order.asc).limit(cint(page_length)).offset(cint(start)).run(as_dict=1)
+		query.orderby(Coalesce(Field("qty", table=stock), 0), order=Order.desc)
+		.orderby(item.item_name, order=Order.asc)
+		.orderby(item.name, order=Order.asc)
+		.limit(cint(page_length))
+		.offset(cint(start))
+		.run(as_dict=1)
 	)
 
 	# return (empty) list if there are no results

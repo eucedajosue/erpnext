@@ -642,9 +642,13 @@
 							}
 
 							> .item-desc {
-								font-size: var(--text-sm);
+								font-size: var(--text-xs);
+								line-height: 1.3;
 								color: var(--gray-600);
 								font-weight: 500;
+								white-space: nowrap;
+								overflow: hidden;
+								text-overflow: ellipsis;
 							}
 
 							> .item-qty-actions {

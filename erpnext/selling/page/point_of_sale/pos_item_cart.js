@@ -903,6 +903,7 @@ erpnext.PointOfSale.ItemCart = class {
 				<div class="item-name">
 					${frappe.utils.escape_html(item_data.item_name)}
 				</div>
+				${get_description_html()}
         		${get_sales_person_html(item_data)}
 				${get_qty_actions_html()}
 			</div>
@@ -910,6 +911,19 @@ erpnext.PointOfSale.ItemCart = class {
 		);
 
 		this.set_dynamic_rate_header_width();
+
+		// Descripción en una sola línea (se corta con "…"; el texto completo queda en el tooltip).
+		// No se modifica item_data.description: es el valor que se guarda en la factura.
+		function get_description_html() {
+			const text = $("<div>")
+				.html(item_data.description || "")
+				.text()
+				.replace(/\s+/g, " ")
+				.trim();
+			if (!text || text.toLowerCase() === (item_data.item_name || "").trim().toLowerCase()) return "";
+			const safe = frappe.utils.escape_html(text);
+			return `<div class="item-desc" title="${safe}">${safe}</div>`;
+		}
 
 		function get_sales_person_html(item_data) {
 			if (item_data.custom_sales_person) {
