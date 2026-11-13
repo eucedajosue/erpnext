@@ -252,15 +252,24 @@ erpnext.PointOfSale.PastOrderSummary = class {
 		});
 	}
 
-	print_receipt() {
+	// `automatic`: se llama solo al terminar la venta (no por el botón).
+	print_receipt(automatic = false) {
 		const frm = this.events.get_frm();
-		frappe.utils.print(
-			this.doc.doctype,
-			this.doc.name,
-			frm.pos_print_format,
-			this.doc.letter_head,
-			this.doc.language || frappe.boot.lang
-		);
+		const print_in_browser = (print_format) =>
+			frappe.utils.print(
+				this.doc.doctype,
+				this.doc.name,
+				print_format || frm.pos_print_format,
+				this.doc.letter_head,
+				this.doc.language || frappe.boot.lang
+			);
+
+		// cm_app: cada caja puede imprimir directo a una impresora o por un servidor de impresión.
+		const cm_print = window.cm_app && window.cm_app.invoice_print && window.cm_app.invoice_print.pos_receipt;
+		if (!cm_print) return print_in_browser();
+		cm_print(this.doc, automatic).then((result) => {
+			if (!result.handled) print_in_browser(result.print_format);
+		});
 	}
 
 	attach_shortcuts() {
@@ -407,7 +416,7 @@ erpnext.PointOfSale.PastOrderSummary = class {
 		this.add_summary_btns(condition_btns_map);
 
 		if (after_submission && this.print_receipt_on_order_complete) {
-			this.print_receipt();
+			this.print_receipt(true);
 		}
 	}
 

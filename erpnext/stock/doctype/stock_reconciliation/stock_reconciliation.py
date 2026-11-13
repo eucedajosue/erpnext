@@ -1417,6 +1417,7 @@ def get_items(
 	company: str,
 	item_code: str | None = None,
 	ignore_empty_stock: bool | str | int = False,
+	shelf_location: str | None = None,
 ):
 	frappe.has_permission("Stock Reconciliation", "write", throw=True)
 	frappe.has_permission("Item", "read", throw=True)
