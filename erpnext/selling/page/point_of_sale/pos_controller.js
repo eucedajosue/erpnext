@@ -706,7 +706,10 @@ erpnext.PointOfSale.Controller = class {
 		this.page.set_secondary_action(__("Recent Orders"), this.toggle_recent_order.bind(this));
 		this.configure_mobile_header_actions();
 
-		if (this.settings.custom_restaurant) {
+		if (this.settings.custom_restaurant && window.cm_app?.restaurant?.setup_pos) {
+			// Plano de mesas, pedidos por mesa y comandas: cm_app/public/js/restaurant_pos.js
+			cm_app.restaurant.setup_pos(this);
+		} else if (this.settings.custom_restaurant) {
 			const save_btn = this.page.add_inner_button(__("Guardar Pedido"), () => {});
 			const recover_btn = this.page.add_inner_button(__("Recuperar Pedido"), () => {});
 
