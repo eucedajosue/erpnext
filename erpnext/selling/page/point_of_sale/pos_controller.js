@@ -2085,7 +2085,11 @@ erpnext.PointOfSale.Controller = class {
 
 	async save_and_checkout() {
 		// Validar vendedor según configuración
-		const config = await frappe.db.get_doc("Configurations", undefined);
+		// cm_app lee la opción en el servidor: un cajero sin permiso sobre «Configurations» no debe quedar
+		// sin poder cobrar ni llenar el log del servidor de errores de permiso.
+		const config = window.cm_app?.get_pos_config
+			? await cm_app.get_pos_config()
+			: await frappe.db.get_doc("Configurations", undefined);
 		if (config.vendedor_es_obligatorio) {
 			const items_sin_vendedor = (this.frm.doc.items || []).filter(
 				item => !item.custom_sales_person

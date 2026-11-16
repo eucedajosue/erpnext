@@ -93,7 +93,9 @@ def search_by_term(search_term, warehouse, price_list):
 	if serial_no:
 		price_filters["uom"] = item_doc.stock_uom
 
-	price = frappe.get_list(
+	# get_all: el precio se muestra a cualquier cajero (la búsqueda por texto tampoco valida permisos);
+	# con get_list, escanear fallaba con PermissionError para quien no puede leer Item Price.
+	price = frappe.get_all(
 		doctype="Item Price",
 		filters=price_filters,
 		fields=["uom", "currency", "price_list_rate", "batch_no"],
