@@ -173,7 +173,7 @@ erpnext.PointOfSale.ItemSelector = class {
 
 				<div class="item-detail">
 					<div class="item-name">
-						${!me.hide_images ? frappe.ellipsis(item_name, 18) : item_name}
+						${frappe.utils.escape_html(item_name)}
 					</div>
 					${
 						!me.hide_images

@@ -300,6 +300,18 @@
 		line-height: 1.25;
 	}
 
+	.point-of-sale-app .customer-cart-container .cart-container .abs-cart-container .cart-items-section .cart-item-wrapper .item-name-desc .item-desc {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		white-space: normal !important;
+		overflow: hidden !important;
+		text-overflow: ellipsis;
+		overflow-wrap: anywhere;
+		line-height: 1.35;
+	}
+
 	.point-of-sale-app.payment-open .payment-container {
 		display: flex;
 		flex-direction: column;

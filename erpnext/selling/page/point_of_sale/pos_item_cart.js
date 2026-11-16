@@ -709,16 +709,16 @@ erpnext.PointOfSale.ItemCart = class {
 							${get_customer_description()}
 						</div>
 						<div class="customer-actions">
-								<button type="button" class="btn btn-default btn-sm add-customer-btn" title="${__("Add Customer")}">+</button>
-							<a href="/app/customer/${customer}" target="_blank" class="edit-customer-btn">
+								
+							<a href="/app/customer/${customer}" target="_blank" class="edit-customer-btn" title="Editar cliente">
 								<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 									<path d="M12 3H7.2C5.51984 3 4.67976 3 4.03803 3.32698C3.47354 3.6146 3.0146 4.07354 2.72698 4.63803C2.4 5.27976 2.4 6.11984 2.4 7.8V16.2C2.4 17.8802 2.4 18.7202 2.72698 19.362C3.0146 19.9265 3.47354 20.3854 4.03803 20.673C4.67976 21 5.51984 21 7.2 21H15.6C17.2802 21 18.1202 21 18.762 20.673C19.3265 20.3854 19.7854 19.9265 20.073 19.362C20.4 18.7202 20.4 17.8802 20.4 16.2V12" stroke="#8D99A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 									<path d="M17.8 2.8C18.8934 1.7066 20.6666 1.7066 21.76 2.8C22.8534 3.8934 22.8534 5.6666 21.76 6.76L11.4 17.12L7.8 18L8.68 14.4L19.04 4.04" stroke="#8D99A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 								</svg>
 							</a>
-							<div class="reset-customer-btn" data-customer="${escape(customer)}">
-								<svg width="32" height="32" viewBox="0 0 14 14" fill="none">
-									<path d="M4.93764 4.93759L7.00003 6.99998M9.06243 9.06238L7.00003 6.99998M7.00003 6.99998L4.93764 9.06238L9.06243 4.93759" stroke="#8D99A6"/>
+							<div class="reset-customer-btn" data-customer="${escape(customer)}" title="Cambiar cliente" role="button">
+								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/>
 								</svg>
 							</div>
 						</div>
@@ -905,14 +905,13 @@ erpnext.PointOfSale.ItemCart = class {
 				</div>
 				${get_description_html()}
         		${get_sales_person_html(item_data)}
-				${get_qty_actions_html()}
 			</div>
 			${get_rate_discount_html()}`
 		);
 
 		this.set_dynamic_rate_header_width();
 
-		// Descripción en una sola línea (se corta con "…"; el texto completo queda en el tooltip).
+		// Descripción hasta 3 líneas (el texto completo queda en el tooltip).
 		// No se modifica item_data.description: es el valor que se guarda en la factura.
 		function get_description_html() {
 			const text = $("<div>")
@@ -959,23 +958,24 @@ erpnext.PointOfSale.ItemCart = class {
 	}
 
 	get_item_qty_rate_html(item_data, currency) {
-		if (item_data.rate && item_data.amount && item_data.rate !== item_data.amount) {
-			return `
-				<div class="item-qty-rate">
-					<div class="item-qty"><span>${item_data.qty || 0} ${item_data.uom}</span></div>
-					<div class="item-rate-amount">
-						<div class="item-rate">${format_currency(item_data.amount, currency)}</div>
-						<div class="item-amount">${format_currency(item_data.rate, currency)}</div>
-					</div>
-				</div>`;
-		}
+		// Stepper "− 1 +" a la derecha y el importe debajo (los botones usan los handlers delegados existentes).
+		const stepper = `
+			<div class="item-stepper">
+				<button type="button" class="qty-btn qty-decrease-btn" title="Disminuir">&minus;</button>
+				<div class="item-qty" title="${frappe.utils.escape_html(item_data.uom || "")}"><span>${flt(item_data.qty || 0)}</span></div>
+				<button type="button" class="qty-btn qty-increase-btn" title="Aumentar">+</button>
+			</div>`;
+
+		const has_discount = item_data.rate && item_data.amount && item_data.rate !== item_data.amount;
+		const amount_html = has_discount
+			? `<div class="item-rate">${format_currency(item_data.amount, currency)}</div>
+			   <div class="item-amount">${format_currency(item_data.rate, currency)}</div>`
+			: `<div class="item-rate">${format_currency(item_data.rate, currency)}</div>`;
 
 		return `
 			<div class="item-qty-rate">
-				<div class="item-qty"><span>${item_data.qty || 0} ${item_data.uom}</span></div>
-				<div class="item-rate-amount">
-					<div class="item-rate">${format_currency(item_data.rate, currency)}</div>
-				</div>
+				${stepper}
+				<div class="item-rate-amount">${amount_html}</div>
 			</div>`;
 	}
 
