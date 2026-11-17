@@ -126,7 +126,22 @@ function make_pos_like_search(listview) {
 		);
 		// fuera de fields_dict: el framework convierte cada campo ahí en un filtro de la consulta
 		delete fields.pos_like_search;
-		wrapper.prepend(field.wrapper);
+
+		// en celular la sección de filtros estándar está oculta: el framework solo muestra ahí
+		// la caja de ID, así que el buscador se mueve a ese hueco y vuelve al cambiar el ancho
+		const mobile_query = window.matchMedia("(max-width: 767.98px)");
+		const place = () => {
+			const mobile_target = listview.filter_area.$mobile_id_filter;
+			if (mobile_query.matches && mobile_target?.length) {
+				mobile_target.prepend(field.wrapper);
+				$(field.wrapper).css({ width: "100%", "max-width": "none" });
+			} else {
+				wrapper.prepend(field.wrapper);
+				$(field.wrapper).css({ width: "", "max-width": "" });
+			}
+		};
+		place();
+		mobile_query.addEventListener("change", place);
 		return true;
 	};
 
