@@ -288,3 +288,45 @@ def get_item_search_candidates(txt: str, searched_fields: list[str]) -> list[str
 	except Exception:
 		frappe.log_error("Item search index unavailable")
 		return None
+
+
+LIST_SEARCH_LIMIT = 1000
+
+
+@frappe.whitelist()
+def search_items_for_list(search_term: str) -> list[str]:
+	"""Códigos de Item para el buscador de la lista, con la misma lógica del buscador del POS:
+	cada palabra debe coincidir (en cualquier orden) con código, nombre, campos de "POS Search Fields"
+	o código de barras. El permiso y los demás filtros los aplica la propia lista al recibir el resultado."""
+	from pypika.terms import Criterion
+
+	from erpnext.selling.page.point_of_sale.point_of_sale import (
+		add_search_fields_condition,
+		get_search_terms,
+	)
+
+	frappe.has_permission("Item", "read", throw=True)
+
+	terms = get_search_terms(search_term)
+	if not terms:
+		return []
+
+	item = frappe.qb.DocType("Item")
+	barcode = frappe.qb.DocType("Item Barcode")
+
+	conditions = []
+	for term in terms:
+		pattern = f"%{term}%"
+		barcode_match = (
+			frappe.qb.from_(barcode)
+			.select(barcode.parent)
+			.where(barcode.parenttype == "Item")
+			.where(barcode.barcode.like(pattern))
+		)
+		term_conditions = [item.name.like(pattern), item.item_name.like(pattern), item.name.isin(barcode_match)]
+		term_conditions += add_search_fields_condition(term, item)
+		conditions.append(Criterion.any(term_conditions))
+
+	return (
+		frappe.qb.from_(item).select(item.name).where(Criterion.all(conditions)).limit(LIST_SEARCH_LIMIT)
+	).run(pluck="name")

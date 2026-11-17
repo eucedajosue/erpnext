@@ -14,6 +14,8 @@ frappe.listview_settings["Item"] = {
 		"is_purchase_item",
 	],
 	filters: [["disabled", "=", "0"]],
+	// el buscador de abajo reemplaza al filtro por ID
+	hide_name_filter: true,
 
 	formatters: {
 		is_fixed_asset: function (value, df, doc) {
@@ -33,6 +35,8 @@ frappe.listview_settings["Item"] = {
 	},
 
 	onload: function (listview) {
+		make_pos_like_search(listview);
+
 		if (listview.view === "List") {
 			listview.columns = listview.columns.map((col) => {
 				if (!col.df) return col;
@@ -83,3 +87,51 @@ frappe.listview_settings["Item"] = {
 };
 
 frappe.help.youtube_id["Item"] = "qXaEwld4_Ps";
+
+// Mismo buscador del POS: varias palabras en cualquier orden sobre código, nombre,
+// campos de búsqueda del POS y códigos de barras. Reemplaza a los buscadores por campo
+// (ID y Nombre); cualquier otro campo sigue disponible desde Filtros.
+function make_pos_like_search(listview) {
+	const apply = frappe.utils.debounce(async (value) => {
+		value = (value || "").trim();
+		await listview.filter_area.remove("name");
+		if (!value) return listview.refresh();
+
+		const { message } = await frappe.call({
+			method: "erpnext.stock.doctype.item.item_search.search_items_for_list",
+			args: { search_term: value },
+		});
+		// sin coincidencias: un código imposible deja la lista vacía
+		await listview.filter_area.add([["Item", "name", "in", message?.length ? message : ["\u0000"]]]);
+	}, 400);
+
+	const build = () => {
+		const wrapper = listview.filter_area?.standard_filters_wrapper;
+		const fields = listview.page.fields_dict;
+		// los filtros estándar los crea el framework de forma asíncrona: esperar a que existan
+		if (!wrapper || !wrapper.length || !fields.item_name) return false;
+
+		fields.item_name.wrapper.remove();
+		delete fields.item_name;
+
+		const field = listview.page.add_field(
+			{
+				fieldtype: "Data",
+				fieldname: "pos_like_search",
+				label: __("Search Item"),
+				placeholder: __("Search by code, name or barcode"),
+				onchange: () => apply(field.get_value()),
+			},
+			wrapper
+		);
+		// fuera de fields_dict: el framework convierte cada campo ahí en un filtro de la consulta
+		delete fields.pos_like_search;
+		wrapper.prepend(field.wrapper);
+		return true;
+	};
+
+	let attempts = 0;
+	const timer = setInterval(() => {
+		if (build() || ++attempts > 50) clearInterval(timer);
+	}, 100);
+}
